@@ -1,0 +1,111 @@
+# =============================================================================
+# .gitignore — Platform standard
+#
+# PURPOSE
+# -------
+# Prevent committing editor noise, local secrets,
+# build artifacts and transient files.
+#
+# This file is intentionally conservative.
+# Source files, Dockerfile, runner and scripts
+# MUST always be committed.
+#
+# Identical across all docker-image-* repositories.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# OS / editor noise
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.idea/
+.vscode/
+.vs/
+*.code-workspace
+
+*.swp
+*.swo
+*~
+*.tmp
+
+
+# -----------------------------------------------------------------------------
+# Environment & local secrets (NEVER commit)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+*.key
+*.pem
+*.p12
+*.crt
+
+secrets*.yaml
+secrets*.yml
+
+
+# -----------------------------------------------------------------------------
+# Build artifacts / generated output
+# -----------------------------------------------------------------------------
+dist/
+build/
+coverage/
+target/
+out/
+
+
+# -----------------------------------------------------------------------------
+# Language / tool specific
+# -----------------------------------------------------------------------------
+
+# Node / frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Java / JVM
+*.class
+*.jar
+*.war
+*.ear
+
+# Go
+bin/
+*.exe
+
+
+# -----------------------------------------------------------------------------
+# Docker / container tooling
+# -----------------------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.local.yml
+
+
+# -----------------------------------------------------------------------------
+# CI / automation artifacts
+# -----------------------------------------------------------------------------
+*.retry
+.retry/
+.cache/
+.tmp/
+
+
+# -----------------------------------------------------------------------------
+# Shell / CLI history
+# -----------------------------------------------------------------------------
+.history
+.bash_history
+.zsh_history

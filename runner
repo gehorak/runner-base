@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Runner – deterministic command dispatcher
+#
+# This script is the single entrypoint for all container images
+# derived from runner-base.
+#
+# DESIGN GOALS:
+# - Explicit behavior (no guessing, no fallbacks)
+# - Human-readable and maintainable over years
+# - Extensible without modifying this file
+#
+# CONCEPT:
+# - Base runner defines the execution model (CORE)
+# - Domain images extend functionality via plugins (runner.d/*.sh)
+#
+# =============================================================================
+
+set -Eeuo pipefail
+
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+IMAGE_ENV="/etc/runner/image.env"
+
+# shellcheck disable=SC1091
+[ -r "$IMAGE_ENV" ] || die "Missing image identity: $IMAGE_ENV"
+source "$IMAGE_ENV"
+
+WORKDIR="${WORKDIR:-/work}"
+PLUGIN_DIR="/usr/local/lib/runner.d"
+
+# -----------------------------------------------------------------------------
+# Helper: print error and exit
+# -----------------------------------------------------------------------------
+
+die() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+# -----------------------------------------------------------------------------
+# CORE COMMANDS
+# These commands define the stable platform contract.
+# They MUST remain backward compatible.
+# -----------------------------------------------------------------------------
+
+runner_help() {
+  cat <<'EOF'
+
+Runner - command dispatcher
+
+Usage:
+  <image> <command> [arguments]
+  
+Core commands:
+  help            Show this help
+  about           Show image identity
+  info            Show runtime environment
+  version         Show provided tool versions
+  exec <cmd>      Execute command explicitly
+  shell           Start interactive shell
+
+Notes:
+- Commands must be explicit
+- No implicit shell or fallback execution
+- Additional commands are provided by image-specific plugins
+
+EOF
+}
+
+runner_about() {
+  cat <<EOF
+
+Image:
+  Name:         ${RUNNER_IMAGE}
+  Domain:       ${RUNNER_DOMAIN}
+  Role:         ${RUNNER_ROLE}
+  Description:  ${RUNNER_DESCRIPTION}
+  Vendor:       ${RUNNER_VENDOR}
+  Repository:   ${RUNNER_REPOSITORY}
+
+EOF
+}
+
+
+runner_info() {
+  cat <<EOF
+
+Runtime:
+  User:     $(id -un) (uid=$(id -u), gid=$(id -g))
+  Workdir:  $(pwd)
+  Shell:    $(command -v bash 2>/dev/null || echo unknown)
+
+Image:
+  Name:    ${RUNNER_IMAGE}
+  Domain:  ${RUNNER_DOMAIN}
+  Role:    ${RUNNER_ROLE}
+
+Plugins:
+EOF
+
+  if [ -d "$PLUGIN_DIR" ] && ls "$PLUGIN_DIR"/* >/dev/null 2>&1; then
+    for f in "$PLUGIN_DIR"/*; do
+      echo "  - $(basename "$f")"
+    done
+  else
+    echo "  (none)"
+  fi
+}
+
+runner_exec() {
+  if [ "$#" -eq 0 ]; then
+    die "exec requires a command"
+  fi
+
+  exec "$@"
+}
+
+runner_shell() {
+  # Interactive shell for humans only.
+  # CI must NOT rely on this.
+  [ -t 0 ] || die "shell requires an interactive terminal ( docker run -it ... )"
+  exec bash
+}
+
+runner_version() {
+  echo "Provided tools:"
+
+  if command -v bash >/dev/null 2>&1; then
+    echo "  bash: $(bash --version | head -n1)"
+  fi
+
+  if command -v coreutils >/dev/null 2>&1; then
+    echo "  coreutils: $(coreutils --version | head -n1)"
+  fi
+
+  if command -v git >/dev/null 2>&1; then
+    echo "  git: $(git --version)"
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    echo "  curl: $(curl --version | head -n1)"
+  fi
+
+  # Optional: allow plugins to extend version output
+  if [ -d "$PLUGIN_DIR" ] && ls "$PLUGIN_DIR"/version-* >/dev/null 2>&1; then
+    echo
+    echo "Module tools:"
+    for plugin in "$PLUGIN_DIR"/version-*; do
+      [ -x "$plugin" ] || continue
+      "$plugin"
+    done
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# PLUGIN DISPATCH
+#
+# Each plugin is a simple shell script that:
+# - receives <command> <args...>
+# - executes the command if it matches
+# - returns 0 on success
+# - returns 1 if the command is not handled
+# -----------------------------------------------------------------------------
+
+dispatch_plugins() {
+  local cmd="$1"
+  shift || true
+
+  [ -d "$PLUGIN_DIR" ] || return 1
+
+  for plugin in "$PLUGIN_DIR"/*; do
+    [ -x "$plugin" ] || continue
+
+    if "$plugin" "$cmd" "$@"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# -----------------------------------------------------------------------------
+# MAIN DISPATCH
+# -----------------------------------------------------------------------------
+
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+  help)    runner_help ;;
+  about)   runner_about ;;
+  info)    runner_info ;;
+  exec)    runner_exec "$@" ;;
+  shell)   runner_shell ;;
+  version) runner_version ;;
+  *)
+    if dispatch_plugins "$CMD" "$@"; then
+      exit 0
+    fi
+
+    die "Unknown command: $CMD"
+    ;;
+esac
+exit 0

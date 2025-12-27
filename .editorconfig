@@ -1,0 +1,42 @@
+# =============================================================================
+# .editorconfig — Editor consistency
+#
+# PURPOSE
+# -------
+# Ensure consistent formatting across editors and platforms.
+# Reduces diff noise and prevents accidental CRLF usage.
+#
+# Identical across all docker-image-* repositories.
+# =============================================================================
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+
+# -----------------------------------------------------------------------------
+# Shell scripts
+# -----------------------------------------------------------------------------
+[*.sh]
+indent_style = space
+indent_size = 2
+
+
+# -----------------------------------------------------------------------------
+# Dockerfile
+# -----------------------------------------------------------------------------
+[Dockerfile]
+indent_style = space
+indent_size = 2
+
+
+# -----------------------------------------------------------------------------
+# YAML / JSON / Markdown
+# -----------------------------------------------------------------------------
+[*.{yml,yaml,json,md}]
+indent_style = space
+indent_size = 2

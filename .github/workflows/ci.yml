@@ -1,0 +1,137 @@
+# =============================================================================
+# Continuous Integration workflow
+#
+# This workflow defines the canonical CI pipeline for all runner-* repositories.
+#
+# Design goals:
+# - Deterministic and reproducible builds
+# - Fast failure on contract violations
+# - Clear separation of build, test, and verification stages
+# - Human-readable structure suitable for long-term maintenance
+#
+# This workflow is intentionally conservative and explicit.
+# =============================================================================
+
+
+name: CI
+
+
+# -----------------------------------------------------------------------------
+# Trigger configuration
+#
+# CI is executed on:
+# - every push to the repository
+# - every pull request targeting the default branch
+#
+# This ensures that:
+# - all changes are validated before merge
+# - the main branch always remains releasable
+# -----------------------------------------------------------------------------
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+
+# -----------------------------------------------------------------------------
+# Jobs definition
+# -----------------------------------------------------------------------------
+
+jobs:
+
+  # ===========================================================================
+  # Build job
+  #
+  # Purpose:
+  # - Build the container image
+  # - Verify that the Dockerfile is valid
+  # - Produce an image artifact for subsequent test jobs
+  # ===========================================================================
+
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # -----------------------------------------------------------------------
+      # Source checkout
+      #
+      # Fetch the repository content required for building the image.
+      # -----------------------------------------------------------------------
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      # -----------------------------------------------------------------------
+      # Docker build
+      #
+      # Build the container image using the repository Dockerfile.
+      # The image is tagged locally for use in subsequent jobs.
+      # -----------------------------------------------------------------------
+
+      - name: Build container image
+        run: |
+          docker build \
+            --tag runner-ci:local \
+            .
+
+
+  # ===========================================================================
+  # Test job
+  #
+  # Purpose:
+  # - Execute all contract and regression tests
+  # - Validate runner behavior and image identity
+  # - Enforce architectural guardrails
+  # ===========================================================================
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+
+      # -----------------------------------------------------------------------
+      # Source checkout
+      #
+      # Tests require access to CI scripts stored in the repository.
+      # -----------------------------------------------------------------------
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      # -----------------------------------------------------------------------
+      # Test execution
+      #
+      # All tests are executed against the locally built image.
+      # The IMAGE variable is passed explicitly to avoid ambiguity.
+      # -----------------------------------------------------------------------
+
+      - name: Execute test suite
+        env:
+          IMAGE: runner-ci:local
+        run: |
+          set -Eeuo pipefail
+
+          ./ci/test-smoke.sh
+          ./ci/test-image-identity.sh
+          ./ci/test-runner-core.sh
+          ./ci/test-negative.sh
+          ./ci/test-runner-plugins.sh
+          ./ci/test-domain.sh
+
+
+# -----------------------------------------------------------------------------
+# End of workflow
+#
+# Contract notes:
+# - This workflow MUST remain compatible with all runner-* repositories.
+# - Repository-specific behavior belongs in Dockerfiles and plugins, not in CI.
+# - Changes to this file should be reviewed as architectural changes.
+# =============================================================================

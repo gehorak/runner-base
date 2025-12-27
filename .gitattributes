@@ -1,0 +1,60 @@
+# =============================================================================
+# .gitattributes — Line endings & binary safety
+#
+# PURPOSE
+# -------
+# This file enforces consistent line endings across all platforms
+# and prevents accidental modification of binary files.
+#
+# WHY THIS MATTERS
+# ----------------
+# - CRLF breaks shell shebangs
+# - Inconsistent EOL causes subtle CI failures
+# - Binary files must never be normalized
+#
+# This file is identical across all docker-image-* repositories.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Default behavior
+# -----------------------------------------------------------------------------
+# Normalize all text files and enforce LF endings.
+# This is critical for shell scripts and Docker builds.
+# -----------------------------------------------------------------------------
+* text=auto eol=lf
+
+
+# -----------------------------------------------------------------------------
+# Shell scripts (CRLF breaks shebangs!)
+# -----------------------------------------------------------------------------
+runner text eol=lf
+*.sh   text eol=lf
+
+
+# -----------------------------------------------------------------------------
+# Docker-related files
+# -----------------------------------------------------------------------------
+Dockerfile     text eol=lf
+*.dockerfile   text eol=lf
+
+
+# -----------------------------------------------------------------------------
+# Structured text formats
+# -----------------------------------------------------------------------------
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+
+
+# -----------------------------------------------------------------------------
+# Binary files (never modify or normalize)
+# -----------------------------------------------------------------------------
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary

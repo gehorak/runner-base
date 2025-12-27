@@ -1,0 +1,128 @@
+# =============================================================================
+# Release workflow
+#
+# This workflow defines the canonical release process for runner-* images.
+#
+# Design goals:
+# - Explicit, tag-driven releases
+# - Deterministic and reproducible image builds
+# - Clear separation from CI validation workflows
+# - Long-term readability and auditability
+#
+# This workflow is intentionally conservative.
+# =============================================================================
+
+
+name: Release
+
+
+# -----------------------------------------------------------------------------
+# Trigger configuration
+#
+# A release is created ONLY when a version tag is pushed.
+# This prevents accidental releases and enforces explicit versioning.
+#
+# Expected tag format:
+#   vX.Y.Z
+#
+# Example:
+#   v0.9.1
+# -----------------------------------------------------------------------------
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+
+# -----------------------------------------------------------------------------
+# Jobs definition
+# -----------------------------------------------------------------------------
+
+jobs:
+
+  # ===========================================================================
+  # Release job
+  #
+  # Purpose:
+  # - Build the container image for the tagged version
+  # - Tag the image with the release version
+  # - Publish the image to the container registry
+  # ===========================================================================
+
+  release:
+    name: Publish release image
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # -----------------------------------------------------------------------
+      # Source checkout
+      #
+      # Fetch the exact source corresponding to the release tag.
+      # -----------------------------------------------------------------------
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      # -----------------------------------------------------------------------
+      # Extract release version
+      #
+      # The version is derived from the Git tag name.
+      # Example:
+      #   refs/tags/v0.9.1 -> 0.9.1
+      # -----------------------------------------------------------------------
+
+      - name: Extract version
+        id: version
+        run: |
+          set -Eeuo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+
+      # -----------------------------------------------------------------------
+      # Authenticate to container registry
+      #
+      # Credentials are provided via GitHub Secrets.
+      # -----------------------------------------------------------------------
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      # -----------------------------------------------------------------------
+      # Build and publish image
+      #
+      # The image is tagged explicitly with the release version.
+      # No implicit 'latest' tag is applied.
+      # -----------------------------------------------------------------------
+
+      - name: Build and push image
+        run: |
+          set -Eeuo pipefail
+
+          IMAGE_NAME="ghcr.io/${{ github.repository }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          docker build \
+            --tag "${IMAGE_NAME}:${VERSION}" \
+            .
+
+          docker push "${IMAGE_NAME}:${VERSION}"
+
+
+# -----------------------------------------------------------------------------
+# End of workflow
+#
+# Contract notes:
+# - Releases are tag-driven and immutable.
+# - This workflow MUST remain identical across all runner-* repositories.
+# - Any change to this file is a release-process change and must be reviewed
+#   accordingly.
+# =============================================================================
