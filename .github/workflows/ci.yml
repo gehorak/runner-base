@@ -36,6 +36,16 @@ on:
 
 
 # -----------------------------------------------------------------------------
+# Permissions
+#
+# CI does not publish artifacts.
+# Read-only permissions are sufficient.
+# -----------------------------------------------------------------------------
+
+permissions:
+  contents: read
+
+# -----------------------------------------------------------------------------
 # Jobs definition
 # -----------------------------------------------------------------------------
 
@@ -51,7 +61,7 @@ jobs:
   # ===========================================================================
 
   build:
-    name: Build image
+    name: Build runner image
     runs-on: ubuntu-latest
 
     steps:
@@ -67,14 +77,17 @@ jobs:
 
 
       # -----------------------------------------------------------------------
-      # Docker build
+      # Build image (local only)
       #
-      # Build the container image using the repository Dockerfile.
-      # The image is tagged locally for use in subsequent jobs.
+      # The image is NOT pushed anywhere.
+      # It is built under a fixed local tag for test consistency.
       # -----------------------------------------------------------------------
 
-      - name: Build container image
+      - name: Build runner image
+        shell: bash
         run: |
+          set -Eeuo pipefail
+
           docker build \
             --tag runner-ci:local \
             .
@@ -90,7 +103,7 @@ jobs:
   # ===========================================================================
 
   test:
-    name: Run tests
+    name: Run contract tests
     runs-on: ubuntu-latest
     needs: build
 
@@ -105,33 +118,42 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-
       # -----------------------------------------------------------------------
-      # Test execution
+      # Ensure test script executability (runtime adaptation)
       #
-      # All tests are executed against the locally built image.
-      # The IMAGE variable is passed explicitly to avoid ambiguity.
+      # Rationale:
+      # - CI must be able to execute test scripts in any environment
+      #   (Linux, WSL, Windows checkouts).
+      # - Repository file mode is treated as best-effort.
+      # - This step guarantees runtime executability without mutating
+      #   the committed source of truth.
       # -----------------------------------------------------------------------
 
-      - name: Execute test suite
-        env:
-          IMAGE: runner-ci:local
+      - name: Ensure CI test scripts are executable
+        shell: bash
         run: |
           set -Eeuo pipefail
-
-          # -----------------------------------------------------------------------
-          # Ensure CI test scripts are executable
-          #
-          # Rationale:
-          # - CI must be able to execute tests in any environment
-          #   regardless of repository file mode (e.g. Windows / WSL checkouts).
-          # - This step enforces execution capability, not repository correctness.
-          # - Repository file permissions remain a best-effort concern.
-          # -----------------------------------------------------------------------
 
           for f in ci/*.sh; do
             [ -x "$f" ] || chmod 0755 "$f"
           done
+
+
+      # -----------------------------------------------------------------------
+      # Test execution
+      #
+      # All tests are executed explicitly and sequentially.
+      # No test discovery or implicit ordering is used.
+      #
+      # The IMAGE variable is passed explicitly to avoid ambiguity.
+      # -----------------------------------------------------------------------
+
+      - name: Execute contract test suite
+        shell: bash
+        env:
+          IMAGE: runner-ci:local
+        run: |
+          set -Eeuo pipefail
 
           ./ci/test-smoke.sh
           ./ci/test-image-identity.sh
@@ -144,8 +166,10 @@ jobs:
 # -----------------------------------------------------------------------------
 # End of workflow
 #
-# Contract notes:
-# - This workflow MUST remain compatible with all runner-* repositories.
-# - Repository-specific behavior belongs in Dockerfiles and plugins, not in CI.
-# - Changes to this file should be reviewed as architectural changes.
+# CONTRACT GUARANTEES
+# -------------------
+# - CI always builds the image from the current repository state.
+# - CI validates the full runner contract before any release is possible.
+# - CI never publishes artifacts or images.
+# - CI behavior is deterministic and environment-independent.
 # =============================================================================

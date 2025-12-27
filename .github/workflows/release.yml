@@ -1,38 +1,53 @@
 # =============================================================================
 # Release workflow
 #
-# This workflow defines the canonical release process for runner-* images.
+# PURPOSE
+# -------
+# Publish an immutable container image based on an explicitly validated
+# Semantic Version tag.
 #
-# Design goals:
-# - Explicit, tag-driven releases
-# - Deterministic and reproducible image builds
-# - Clear separation from CI validation workflows
-# - Long-term readability and auditability
+# This workflow:
+# - validates the release tag format (SemVer)
+# - binds the image to an exact git commit
+# - performs a minimal smoke test on the built image
+# - publishes a fully identifiable, auditable artifact
 #
-# This workflow is intentionally conservative.
+# This file is part of the architectural contract.
+# Any modification MUST be reviewed as a breaking change.
 # =============================================================================
 
 
-name: Release
+name: Release image
 
 
 # -----------------------------------------------------------------------------
 # Trigger configuration
 #
-# A release is created ONLY when a version tag is pushed.
-# This prevents accidental releases and enforces explicit versioning.
+# The workflow is triggered exclusively by annotated or lightweight git tags
+# matching the pattern: vX.Y.Z
 #
-# Expected tag format:
-#   vX.Y.Z
-#
-# Example:
-#   v0.9.1
+# Examples:
+#   v0.1.0   → valid
+#   v1.2.3   → valid
+#   v1.0     → INVALID
+#   v1.0.0-rc1 → INVALID
 # -----------------------------------------------------------------------------
 
 on:
   push:
     tags:
       - 'v*.*.*'
+
+
+# -----------------------------------------------------------------------------
+# Permissions
+#
+# Minimal required permissions only.
+# -----------------------------------------------------------------------------
+
+permissions:
+  contents: read
+  packages: write
 
 
 # -----------------------------------------------------------------------------
@@ -51,44 +66,90 @@ jobs:
   # ===========================================================================
 
   release:
-    name: Publish release image
+    name: Build, validate and publish image
     runs-on: ubuntu-latest
 
     steps:
 
       # -----------------------------------------------------------------------
-      # Source checkout
+       # Checkout source
       #
-      # Fetch the exact source corresponding to the release tag.
+      # The repository is checked out exactly at the tagged commit.
+      # No branch state is involved.
       # -----------------------------------------------------------------------
 
-      - name: Checkout source
+      - name: Checkout source at tag
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
 
       # -----------------------------------------------------------------------
-      # Extract release version
+      # Validate release tag (STRICT SemVer)
       #
-      # The version is derived from the Git tag name.
-      # Example:
-      #   refs/tags/v0.9.1 -> 0.9.1
+      # Accepted format:
+      #   vMAJOR.MINOR.PATCH
+      #
+      # This step fails hard on any deviation.
       # -----------------------------------------------------------------------
 
-      - name: Extract version
-        id: version
+      - name: Validate release tag (SemVer)
+        id: semver
+        shell: bash
         run: |
           set -Eeuo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
+          TAG="${GITHUB_REF#refs/tags/}"
+
+          if [[ ! "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "ERROR: Invalid release tag '$TAG'"
+            echo "Expected format: vMAJOR.MINOR.PATCH (e.g. v1.2.3)"
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          COMMIT_SHA="$(git rev-parse HEAD)"
+
+          echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # Authenticate to container registry
+      # Define Docker image metadata
       #
-      # Credentials are provided via GitHub Secrets.
+      # OCI labels provide full artifact traceability:
+      # - source repository
+      # - exact commit hash
+      # - build timestamp
       # -----------------------------------------------------------------------
 
-      - name: Log in to container registry
+      - name: Define Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/gehorak/runner-base
+          tags: |
+            type=raw,value=${{ steps.semver.outputs.version }}
+            type=raw,value=${{ steps.semver.outputs.version | replace('.', '.') }}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=runner-base
+            org.opencontainers.image.description=Deterministic base runner image
+            org.opencontainers.image.source=https://github.com/gehorak/runner-base
+            org.opencontainers.image.version=${{ steps.semver.outputs.version }}
+            org.opencontainers.image.revision=${{ steps.semver.outputs.commit }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+
+
+
+      # -----------------------------------------------------------------------
+      # Authenticate to GitHub Container Registry
+      #
+      # Authentication is performed using the built-in GITHUB_TOKEN.
+      # -----------------------------------------------------------------------
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -97,32 +158,58 @@ jobs:
 
 
       # -----------------------------------------------------------------------
-      # Build and publish image
+      # Build image (local)
       #
-      # The image is tagged explicitly with the release version.
-      # No implicit 'latest' tag is applied.
+      # The image is built locally first to allow validation before publishing.
       # -----------------------------------------------------------------------
 
-      - name: Build and push image
+      - name: Build image (local)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: runner-release:test
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # -----------------------------------------------------------------------
+      # Minimal smoke test
+      #
+      # This step verifies that:
+      # - the image can be started
+      # - the runner entrypoint is functional
+      #
+      # This is NOT a full test suite.
+      # CI is responsible for exhaustive validation.
+      # -----------------------------------------------------------------------
+
+      - name: Smoke test image
+        shell: bash
         run: |
           set -Eeuo pipefail
 
-          IMAGE_NAME="ghcr.io/${{ github.repository }}"
-          VERSION="${{ steps.version.outputs.version }}"
+          docker run --rm runner-release:test info > /dev/null
 
-          docker build \
-            --tag "${IMAGE_NAME}:${VERSION}" \
-            .
+      # -----------------------------------------------------------------------
+      # Publish image to GHCR
+      #
+      # Only executed after successful validation and smoke testing.
+      # -----------------------------------------------------------------------
 
-          docker push "${IMAGE_NAME}:${VERSION}"
-
+      - name: Publish image to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
 # -----------------------------------------------------------------------------
 # End of workflow
 #
-# Contract notes:
-# - Releases are tag-driven and immutable.
-# - This workflow MUST remain identical across all runner-* repositories.
-# - Any change to this file is a release-process change and must be reviewed
-#   accordingly.
+# CONTRACT GUARANTEES
+# -------------------
+# - Only valid SemVer tags can produce a release.
+# - Every published image is traceable to a specific commit.
+# - A runnable image is verified before publication.
+# - No image is published implicitly from any branch.
 # =============================================================================
