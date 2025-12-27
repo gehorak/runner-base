@@ -36,7 +36,7 @@ name: Release image
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*'
 
 
 # -----------------------------------------------------------------------------
@@ -107,11 +107,17 @@ jobs:
             exit 1
           fi
 
-          VERSION="${TAG#v}"
+          MAJOR="${BASH_REMATCH[1]}"
+          MINOR="${BASH_REMATCH[2]}"
+          PATCH="${BASH_REMATCH[3]}"
+
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          VERSION_MM="${MAJOR}.${MINOR}"
           COMMIT_SHA="$(git rev-parse HEAD)"
 
           echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_mm=$VERSION_MM" >> "$GITHUB_OUTPUT"
           echo "commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
@@ -131,7 +137,7 @@ jobs:
             ghcr.io/gehorak/runner-base
           tags: |
             type=raw,value=${{ steps.semver.outputs.version }}
-            type=raw,value=${{ steps.semver.outputs.version | replace('.', '.') }}
+            type=raw,value=${{ steps.semver.outputs.version_mm }}
             type=raw,value=latest
           labels: |
             org.opencontainers.image.title=runner-base
@@ -139,8 +145,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/gehorak/runner-base
             org.opencontainers.image.version=${{ steps.semver.outputs.version }}
             org.opencontainers.image.revision=${{ steps.semver.outputs.commit }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
-
+            org.opencontainers.image.created=${{ github.run_started_at }}
 
 
       # -----------------------------------------------------------------------
@@ -186,7 +191,6 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-
           docker run --rm runner-release:test info > /dev/null
 
       # -----------------------------------------------------------------------
