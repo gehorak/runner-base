@@ -119,6 +119,20 @@ jobs:
         run: |
           set -Eeuo pipefail
 
+          # -----------------------------------------------------------------------
+          # Ensure CI test scripts are executable
+          #
+          # Rationale:
+          # - CI must be able to execute tests in any environment
+          #   regardless of repository file mode (e.g. Windows / WSL checkouts).
+          # - This step enforces execution capability, not repository correctness.
+          # - Repository file permissions remain a best-effort concern.
+          # -----------------------------------------------------------------------
+
+          for f in ci/*.sh; do
+            [ -x "$f" ] || chmod 0755 "$f"
+          done
+
           ./ci/test-smoke.sh
           ./ci/test-image-identity.sh
           ./ci/test-runner-core.sh
