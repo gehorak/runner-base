@@ -100,7 +100,7 @@ USER root
 # Runner identity
 # -----------------------------------------------------------------------------
 
-COPY etc/runner/image.env /etc/runner/image.env
+COPY image.env /etc/runner/image.env
 RUN chmod 0644 /etc/runner/image.env
 
 # -----------------------------------------------------------------------------
