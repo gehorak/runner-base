@@ -49,7 +49,7 @@ die() {
 runner_help() {
   cat <<'EOF'
 
-Runner - command dispatcher
+runner - command dispatcher
 
 Usage:
   <image> <command> [arguments]

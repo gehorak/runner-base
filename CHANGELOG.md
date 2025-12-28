@@ -12,12 +12,12 @@
 
 ---
 
-## [0.1.0] – 2025-12-25
+## [0.1.0] – 2025-12
 
 ### Added
 - Initial public release of `runner-base`
 - Deterministic, bash-based runner entrypoint
-- Explicit CLI execution model with no implicit command execution
+- Explicit CLI execution model 
 - Stable set of core commands:
   - `help`
   - `about`
@@ -37,8 +37,7 @@
 
 ### Notes
 - This release establishes the initial runner execution contract.
-- The project is in pre-1.0 state; the contract may still evolve.
-
+- CI workflows are not part of the runtime contract
 ---
 
 ## Versioning Policy

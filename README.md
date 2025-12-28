@@ -124,8 +124,6 @@ and debugging purposes.
 
 ## Documentation
 
-* `docs/RUNNER_CONTRACT.md` — execution model and guarantees
-* `docs/SECURITY.md` — security considerations
 * `CHANGELOG.md` — version history
 
 ---
