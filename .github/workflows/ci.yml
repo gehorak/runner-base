@@ -66,7 +66,7 @@ jobs:
   # ===========================================================================
 
   build:
-    name: Build runner image
+    name: Build and validate runner image
     runs-on: ubuntu-latest
 
     steps:
@@ -91,37 +91,21 @@ jobs:
           set -Eeuo pipefail
 
           docker build \
-            --tag runner-ci:local \
+            --tag runner-ci:${{ github.sha }} \
             .
 
 
-  # ===========================================================================
-  # Test job
-  #
-  # Purpose:
-  # - Execute the full runner contract test suite
-  # - Validate execution model, identity, and invariants
-  #
-  # This job enforces the platform contract.
-  # ===========================================================================
-
-  test:
-    name: Run contract tests
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-
-      # -----------------------------------------------------------------------
-      # Source checkout
+      # ===========================================================================
+      # Test steps
       #
-      # Tests are stored in the repository and must be checked out explicitly.
-      # -----------------------------------------------------------------------
+      # Purpose:
+      # - Execute the full runner contract test suite
+      # - Validate execution model, identity, and invariants
+      #
+      # This job enforces the platform contract.
+      # =========================================================================== 
 
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-
+     
       # -----------------------------------------------------------------------
       # Ensure test script executability
       #
@@ -156,7 +140,7 @@ jobs:
       - name: Execute contract test suite
         shell: bash
         env:
-          IMAGE: runner-ci:local
+          IMAGE: runner-ci:${{ github.sha }}
         run: |
           set -Eeuo pipefail
 
