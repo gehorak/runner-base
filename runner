@@ -1,108 +1,152 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Runner – deterministic command dispatcher
+# runner — deterministic command dispatcher
 #
-# This script is the single entrypoint for all container images
-# derived from runner-base.
+# PURPOSE
+# -------
+# Single entrypoint for all runner-based images.
 #
-# DESIGN GOALS:
+# DESIGN PRINCIPLES
+# -----------------
 # - Explicit behavior (no guessing, no fallbacks)
-# - Human-readable and maintainable over years
-# - Extensible without modifying this file
+# - Deterministic dispatch (1 command → 1 plugin)
+# - Manifest- and contract-driven
+# - Readable and auditable over many years
 #
-# CONCEPT:
-# - Base runner defines the execution model (CORE)
-# - Domain images extend functionality via plugins (runner.d/*.sh)
+# ARCHITECTURE
+# ------------
+# - runner      → command dispatcher
+# - runner.d/*  → single-purpose plugins (1 tool = 1 plugin)
+#
+# Plugins NEVER self-dispatch.
+# Plugins NEVER receive the command name.
 #
 # =============================================================================
 
 set -Eeuo pipefail
 
-# -----------------------------------------------------------------------------
-# Configuration
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Fixed platform locations (CONTRACT)
+# =============================================================================
 
-IMAGE_ENV="/etc/runner/image.env"
+readonly PLUGIN_DIR="/usr/local/lib/runner.d"
 
-# shellcheck disable=SC1091
-[ -r "$IMAGE_ENV" ] || die "Missing image identity: $IMAGE_ENV"
-source "$IMAGE_ENV"
+readonly IMAGE_ENV="/etc/runner/image.env"
+readonly RUNTIME_ENV="/etc/runner/runtime.env"
+readonly TOOLS_ENV="/etc/runner/tools.env"
 
-WORKDIR="${WORKDIR:-/work}"
-PLUGIN_DIR="/usr/local/lib/runner.d"
-
-# -----------------------------------------------------------------------------
-# Helper: print error and exit
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Helpers
+# =============================================================================
 
 die() {
   echo "ERROR: $*" >&2
   exit 1
 }
 
-# -----------------------------------------------------------------------------
-# CORE COMMANDS
-# These commands define the stable platform contract.
-# They MUST remain backward compatible.
-# -----------------------------------------------------------------------------
+heading() {
+  echo "$1:"
+}
+
+indent() {
+  sed 's/^/  /'
+}
+
+# =============================================================================
+# Load runtime contracts (READ-ONLY)
+# =============================================================================
+
+[[ -f "$IMAGE_ENV" ]]   || die "missing image contract (${IMAGE_ENV})"
+[[ -f "$RUNTIME_ENV" ]] || die "missing runtime contract (${RUNTIME_ENV})"
+
+# shellcheck disable=SC1090
+source "$IMAGE_ENV"
+# shellcheck disable=SC1090
+source "$RUNTIME_ENV"
+
+# Optional tools metadata
+if [[ -f "$TOOLS_ENV" ]]; then
+  # shellcheck disable=SC1090
+  source "$TOOLS_ENV"
+fi
+
+# =============================================================================
+# Core commands (BUILT-IN)
+# =============================================================================
 
 runner_help() {
+  heading " RUNNER - command dispatcher"
   cat <<'EOF'
-
-runner - command dispatcher
 
 Usage:
   <image> <command> [arguments]
-  
+
 Core commands:
   help            Show this help
   about           Show image identity
-  info            Show runtime environment
+  info            Show runtime environment and tools
   version         Show provided tool versions
   exec <cmd>      Execute command explicitly
-  shell           Start interactive shell
+  shell           Start interactive shell (human use only)
 
 Notes:
 - Commands must be explicit
 - No implicit shell or fallback execution
 - Additional commands are provided by image-specific plugins
-
 EOF
 }
 
 runner_about() {
-  cat <<EOF
-
-Image:
-  Name:         ${RUNNER_IMAGE}
-  Domain:       ${RUNNER_DOMAIN}
-  Role:         ${RUNNER_ROLE}
-  Description:  ${RUNNER_DESCRIPTION}
-  Vendor:       ${RUNNER_VENDOR}
-  Repository:   ${RUNNER_REPOSITORY}
-
+  heading "Image identity"
+  cat <<EOF | indent
+Name:        ${RUNNER_IMAGE}
+Domain:      ${RUNNER_DOMAIN}
+Role:        ${RUNNER_ROLE}
+Description: ${RUNNER_DESCRIPTION}
+Vendor:      ${RUNNER_VENDOR}
+Repository:  ${RUNNER_REPOSITORY}
 EOF
 }
 
-
 runner_info() {
-  cat <<EOF
-
-Runtime:
-  User:     $(id -un) (uid=$(id -u), gid=$(id -g))
-  Workdir:  $(pwd)
-  Shell:    $(command -v bash 2>/dev/null || echo unknown)
-
-Image:
-  Name:    ${RUNNER_IMAGE}
-  Domain:  ${RUNNER_DOMAIN}
-  Role:    ${RUNNER_ROLE}
-
-Plugins:
+  heading "Image identity"
+  cat <<EOF | indent
+Name:   ${RUNNER_IMAGE}
+Domain: ${RUNNER_DOMAIN}
+Role:   ${RUNNER_ROLE}
 EOF
 
-  if [ -d "$PLUGIN_DIR" ] && ls "$PLUGIN_DIR"/* >/dev/null 2>&1; then
+  echo
+  heading "Runtime contract"
+  cat <<EOF | indent
+User:    ${RUNTIME_USER_NAME} (${RUNTIME_USER_UID}:${RUNTIME_USER_GID})
+Home:    ${RUNTIME_USER_HOME}
+Shell:   ${RUNTIME_SHELL}
+Workdir: ${RUNTIME_WORKDIR}
+EOF
+
+  echo
+  heading "Runtime state"
+  cat <<EOF | indent
+User:    $(id -un) ($(id -u):$(id -g))
+Home:    ${HOME}
+Shell:   $(command -v "${RUNTIME_SHELL}" 2>/dev/null || echo unknown)
+Workdir: $(pwd)
+EOF
+
+  echo
+  heading "Tools"
+  if [[ -s "$TOOLS_ENV" ]]; then
+    sed 's/^/  /' "$TOOLS_ENV"
+  else
+    echo "  (none)"
+  fi
+
+  echo
+  heading "Plugins"
+  if [[ -d "$PLUGIN_DIR" ]] && ls "$PLUGIN_DIR"/* >/dev/null 2>&1; then
     for f in "$PLUGIN_DIR"/*; do
+      [[ -x "$f" ]] || continue
       echo "  - $(basename "$f")"
     done
   else
@@ -111,80 +155,38 @@ EOF
 }
 
 runner_exec() {
-  if [ "$#" -eq 0 ]; then
-    die "exec requires a command"
-  fi
-
+  [[ $# -gt 0 ]] || die "exec requires a command"
   exec "$@"
 }
 
 runner_shell() {
-  # Interactive shell for humans only.
-  # CI must NOT rely on this.
-  [ -t 0 ] || die "shell requires an interactive terminal ( docker run -it ... )"
-  exec bash
+  [[ -t 0 ]] || die "shell requires an interactive terminal (use -it)"
+  exec "${RUNTIME_SHELL}"
 }
 
 runner_version() {
-  echo "Provided tools:"
+  # Prefer plugin-provided version (image-specific UX)
+  local plugin="${PLUGIN_DIR}/version"
 
-  if command -v bash >/dev/null 2>&1; then
-    echo "  bash: $(bash --version | head -n1)"
+  if [[ -x "$plugin" ]]; then
+    exec "$plugin"
   fi
 
-  if command -v coreutils >/dev/null 2>&1; then
-    echo "  coreutils: $(coreutils --version | head -n1)"
+  heading "Tool versions"
+
+  # Manifest-driven tool versions
+  if [[ -s "$TOOLS_ENV" ]]; then
+    sed 's/^TOOL_//' "$TOOLS_ENV" | grep '_VERSION=' | sort | indent
+    return 0
   fi
 
-  if command -v git >/dev/null 2>&1; then
-    echo "  git: $(git --version)"
-  fi
-
-  if command -v curl >/dev/null 2>&1; then
-    echo "  curl: $(curl --version | head -n1)"
-  fi
-
-  # Optional: allow plugins to extend version output
-  if [ -d "$PLUGIN_DIR" ] && ls "$PLUGIN_DIR"/version-* >/dev/null 2>&1; then
-    echo
-    echo "Module tools:"
-    for plugin in "$PLUGIN_DIR"/version-*; do
-      [ -x "$plugin" ] || continue
-      "$plugin"
-    done
-  fi
+  echo "(no version information provided by this image)" | indent
+  exit 0
 }
 
-# -----------------------------------------------------------------------------
-# PLUGIN DISPATCH
-#
-# Each plugin is a simple shell script that:
-# - receives <command> <args...>
-# - executes the command if it matches
-# - returns 0 on success
-# - returns 1 if the command is not handled
-# -----------------------------------------------------------------------------
-
-dispatch_plugins() {
-  local cmd="$1"
-  shift || true
-
-  [ -d "$PLUGIN_DIR" ] || return 1
-
-  for plugin in "$PLUGIN_DIR"/*; do
-    [ -x "$plugin" ] || continue
-
-    if "$plugin" "$cmd" "$@"; then
-      return 0
-    fi
-  done
-
-  return 1
-}
-
-# -----------------------------------------------------------------------------
-# MAIN DISPATCH
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Main dispatch (DETERMINISTIC)
+# =============================================================================
 
 CMD="${1:-help}"
 shift || true
@@ -197,11 +199,12 @@ case "$CMD" in
   shell)   runner_shell ;;
   version) runner_version ;;
   *)
-    if dispatch_plugins "$CMD" "$@"; then
-      exit 0
+    plugin="${PLUGIN_DIR}/${CMD}"
+
+    if [[ -x "$plugin" ]]; then
+      exec "$plugin" "$@"
     fi
 
-    die "Unknown command: $CMD"
+    die "unknown command: ${CMD}"
     ;;
 esac
-exit 0
