@@ -121,6 +121,20 @@ jobs:
 
 
       # -----------------------------------------------------------------------
+      # Ensure tag is on main
+      # -----------------------------------------------------------------------
+
+      - name: Ensure tag is on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+
+
+
+
+      # -----------------------------------------------------------------------
       # Define Docker image metadata
       #
       # OCI labels provide full artifact traceability:
