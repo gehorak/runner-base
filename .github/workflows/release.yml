@@ -1,5 +1,5 @@
 # =============================================================================
-# Release workflow
+# Release workflow — runner-base
 #
 # PURPOSE
 # -------
@@ -7,15 +7,14 @@
 # Semantic Version tag.
 #
 # This workflow:
-# - validates the release tag format (SemVer)
+# - validates the release tag format (strict SemVer)
 # - binds the image to an exact git commit
-# - performs a minimal smoke test on the built image
-# - publishes a fully identifiable, auditable artifact
+# - performs a minimal runtime smoke check
+# - publishes a fully identifiable and auditable artifact
 #
-# This file is part of the architectural contract.
+# This file is part of the platform contract.
 # Any modification MUST be reviewed as a breaking change.
 # =============================================================================
-
 
 name: Release image
 
@@ -23,8 +22,8 @@ name: Release image
 # -----------------------------------------------------------------------------
 # Trigger configuration
 #
-# The workflow is triggered exclusively by annotated or lightweight git tags
-# matching the pattern: vX.Y.Z
+# The workflow is triggered exclusively by git tags
+# matching the pattern: vMAJOR.MINOR.PATCH
 #
 # Examples:
 #   v0.1.0   → valid
@@ -42,7 +41,7 @@ on:
 # -----------------------------------------------------------------------------
 # Permissions
 #
-# Minimal required permissions only.
+# Minimal permissions required for publishing to GHCR.
 # -----------------------------------------------------------------------------
 
 permissions:
@@ -51,7 +50,7 @@ permissions:
 
 
 # -----------------------------------------------------------------------------
-# Jobs definition
+# Jobs
 # -----------------------------------------------------------------------------
 
 jobs:
@@ -61,18 +60,18 @@ jobs:
   #
   # Purpose:
   # - Build the container image for the tagged version
-  # - Tag the image with the release version
+  # - Validate basic runtime behavior
   # - Publish the image to the container registry
   # ===========================================================================
 
   release:
-    name: Build, validate and publish image
+    name: Build, validate, and publish image
     runs-on: ubuntu-latest
 
     steps:
 
       # -----------------------------------------------------------------------
-       # Checkout source
+      # Checkout source
       #
       # The repository is checked out exactly at the tagged commit.
       # No branch state is involved.
@@ -85,12 +84,12 @@ jobs:
 
 
       # -----------------------------------------------------------------------
-      # Validate release tag (STRICT SemVer)
+      # Validate release tag (strict SemVer)
       #
       # Accepted format:
       #   vMAJOR.MINOR.PATCH
       #
-      # This step fails hard on any deviation.
+      # Any deviation fails the workflow.
       # -----------------------------------------------------------------------
 
       - name: Validate release tag (SemVer)
@@ -115,10 +114,25 @@ jobs:
           VERSION_MM="${MAJOR}.${MINOR}"
           COMMIT_SHA="$(git rev-parse HEAD)"
 
-          echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "version_mm=$VERSION_MM" >> "$GITHUB_OUTPUT"
-          echo "commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"              >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}"      >> "${GITHUB_OUTPUT}"
+          echo "version_mm=${VERSION_MM}" >> "${GITHUB_OUTPUT}"
+          echo "commit=${COMMIT_SHA}"    >> "${GITHUB_OUTPUT}"
+
+
+      # -----------------------------------------------------------------------
+      # Ensure tag is on main
+      # -----------------------------------------------------------------------
+
+      - name: Ensure tag is on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+
+
+
 
       # -----------------------------------------------------------------------
       # Define Docker image metadata
@@ -150,8 +164,6 @@ jobs:
 
       # -----------------------------------------------------------------------
       # Authenticate to GitHub Container Registry
-      #
-      # Authentication is performed using the built-in GITHUB_TOKEN.
       # -----------------------------------------------------------------------
 
       - name: Log in to GitHub Container Registry
@@ -163,9 +175,10 @@ jobs:
 
 
       # -----------------------------------------------------------------------
-      # Build image (local)
+      # Build image locally
       #
-      # The image is built locally first to allow validation before publishing.
+      # The image is built locally first to allow validation
+      # before publication.
       # -----------------------------------------------------------------------
 
       - name: Build image (local)
@@ -176,15 +189,16 @@ jobs:
           tags: runner-release:test
           labels: ${{ steps.meta.outputs.labels }}
 
+
       # -----------------------------------------------------------------------
-      # Minimal smoke test
+      # Minimal runtime smoke check
       #
-      # This step verifies that:
+      # Verifies:
       # - the image can be started
-      # - the runner entrypoint is functional
+      # - the runner entrypoint responds
       #
-      # This is NOT a full test suite.
-      # CI is responsible for exhaustive validation.
+      # This is intentionally NOT a full test suite.
+      # Exhaustive validation is handled by CI.
       # -----------------------------------------------------------------------
 
       - name: Smoke test image
@@ -193,10 +207,27 @@ jobs:
           set -Eeuo pipefail
           docker run --rm runner-release:test info > /dev/null
 
+
+      # -----------------------------------------------------------------------
+      # Full contract validation (CI invariant)
+      #
+      # Release MUST re-validate the full runner contract.
+      # Publishing without passing the full test suite is forbidden.
+      # -----------------------------------------------------------------------
+
+      - name: Run full contract test suite
+        shell: bash
+        env:
+          IMAGE: runner-release:test
+        run: |
+          set -Eeuo pipefail
+          make check
+
+
       # -----------------------------------------------------------------------
       # Publish image to GHCR
       #
-      # Only executed after successful validation and smoke testing.
+      # Executed only after successful build and validation.
       # -----------------------------------------------------------------------
 
       - name: Publish image to GHCR

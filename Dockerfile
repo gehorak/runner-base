@@ -1,132 +1,174 @@
 # =============================================================================
-# Dockerfile — runner-base 0.1.0
+# Dockerfile — runner-base
 #
-# PURPOSE
-# -------
-# Provide a minimal, deterministic runtime for tooling images.
+# Purpose:
+#   Provide a minimal, deterministic runtime for runner-based tooling images.
 #
 # This image defines:
 # - execution model
 # - security baseline
-# - runner contract
+# - runner platform contract
 #
-# All domain-specific images MUST extend this image.
+# All domain-specific runner images MUST extend this image.
 #
-# DESIGN PRINCIPLES
-# -----------------
+# Design goals:
 # - explicit behavior over convenience
-# - minimal surface area
-# - human-readable and auditable
-# - stable over long periods of time
-#
+# - minimal and auditable surface area
+# - long-term stability
 # =============================================================================
 
 
-# -----------------------------------------------------------------------------
-# Base system
-# -----------------------------------------------------------------------------
-# Debian slim provides:
-# - predictable package management
-# - long-term stability
-# - wide compatibility with tooling binaries
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Base operating system
+#
+# NOTE:
+# - Base OS is an implementation detail
+# - NOT part of the runner contract
+# =============================================================================
+
 FROM debian:bookworm-slim
 
 
-# -----------------------------------------------------------------------------
-# Metadata (OCI labels)
-# -----------------------------------------------------------------------------
-LABEL org.opencontainers.image.title="runner-base" 
-LABEL org.opencontainers.image.description="Deterministic runner base image"
-LABEL org.opencontainers.image.vendor="gehorak"
-LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/gehorak/runner-base"
+# =============================================================================
+# Deterministic build environment
+# =============================================================================
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV TZ=Etc/UTC
+
+SHELL ["/bin/bash", "-Eeuo", "pipefail", "-c"]
 
 
-# -----------------------------------------------------------------------------
-# Environment
-# -----------------------------------------------------------------------------
-# Avoid interactive prompts and ensure consistent behavior.
-# -----------------------------------------------------------------------------
-ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
-
-
-# -----------------------------------------------------------------------------
-# System dependencies
-# -----------------------------------------------------------------------------
-# Only essential utilities required by the runner and common tooling.
+# =============================================================================
+# Minimal OS dependencies
 #
-# Keep this list minimal.
-# Domain-specific tools belong to derived images.
-# -----------------------------------------------------------------------------
+# Required for:
+# - HTTPS communication
+# - shell execution
+# - runner operation
+#
+# NOT part of the public image contract.
+# =============================================================================
+
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      bash \
       ca-certificates \
+      bash \
+      coreutils \
       curl \
-      git \      
+      wget \
+      git \
+      openssh-client \
+      gnupg \
       tar \
       gzip \
       zip \
       unzip \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+      grep \
+      sed \
+      mawk \
+ && rm -rf /var/lib/apt/lists/*
 
 
-# -----------------------------------------------------------------------------
-# Runtime user
-# -----------------------------------------------------------------------------
-# The image MUST NOT run as root.
-# -----------------------------------------------------------------------------
-RUN useradd --create-home --uid 1000 iac
-
-USER iac
-WORKDIR /work
-
-
-# -----------------------------------------------------------------------------
-# Runner installation
-# -----------------------------------------------------------------------------
-# The runner is the single entrypoint for all execution.
+# =============================================================================
+# Image manifest (single source of truth)
 #
-# - /usr/local/bin/runner        → entrypoint
-# - /usr/local/lib/runner.d/     → plugin directory (modules)
-# -----------------------------------------------------------------------------
-USER root
+# The manifest defines:
+# - image identity
+# - runtime execution context
+# - declared tooling (for derived images)
+# =============================================================================
 
-# -----------------------------------------------------------------------------
-# Runner identity
-# -----------------------------------------------------------------------------
+COPY image.manifest /tmp/image.manifest
 
-COPY image.env /etc/runner/image.env
-RUN chmod 0644 /etc/runner/image.env
 
-# -----------------------------------------------------------------------------
-# Runner binary
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Manifest validation
+#
+# Fail early if the manifest schema is unsupported.
+# =============================================================================
+
+RUN grep -q '^MANIFEST_SCHEMA_VERSION=1$' /tmp/image.manifest \
+ || (echo "ERROR: unsupported manifest schema version" >&2 && exit 1)
+
+
+# =============================================================================
+# Materialize runtime contract
+#
+# Runtime code MUST read only files under /etc/runner.
+# The manifest itself MUST NOT be accessed at runtime.
+# =============================================================================
+
+RUN mkdir -p /etc/runner \
+ && grep '^RUNNER_'  /tmp/image.manifest > /etc/runner/image.env \
+ && grep '^RUNTIME_' /tmp/image.manifest > /etc/runner/runtime.env \
+ && grep '^TOOL_'    /tmp/image.manifest > /etc/runner/tools.env || true \
+ && chmod 0444 /etc/runner/*.env
+
+
+# =============================================================================
+# Runtime user creation
+#
+# The image MUST NOT run as root.
+# User identity is defined exclusively by the manifest.
+# =============================================================================
+
+RUN source /etc/runner/runtime.env \
+ && groupadd --gid "${RUNTIME_USER_GID}" "${RUNTIME_USER_NAME}" \
+ && useradd \
+      --uid "${RUNTIME_USER_UID}" \
+      --gid "${RUNTIME_USER_GID}" \
+      --home-dir "${RUNTIME_USER_HOME}" \
+      --create-home \
+      --shell "${RUNTIME_SHELL}" \
+      "${RUNTIME_USER_NAME}"
+
+
+# =============================================================================
+# Runner installation
+#
+# The runner is the single entrypoint for all execution.
+# =============================================================================
 
 COPY runner /usr/local/bin/runner
-RUN chmod +x /usr/local/bin/runner
-
-RUN mkdir -p /usr/local/lib/runner.d \
- && chown -R iac:iac /usr/local/lib
+RUN chmod 0755 /usr/local/bin/runner
 
 
-# -----------------------------------------------------------------------------
-# Default execution context
-# -----------------------------------------------------------------------------
-USER iac
-ENTRYPOINT ["runner"]
+# =============================================================================
+# Runtime defaults (apply runtime contract)
+#
+# Defaults are defined here.
+# Optional build-time overrides may replace them.
+# =============================================================================
+
+ARG RUNTIME_USER_NAME=runner
+ARG RUNTIME_WORKDIR=/workspace
+
+ENV RUNTIME_USER_NAME=${RUNTIME_USER_NAME}
+ENV RUNTIME_WORKDIR=${RUNTIME_WORKDIR}
+
+WORKDIR ${RUNTIME_WORKDIR}
+USER ${RUNTIME_USER_NAME}
+
+
+
+# =============================================================================
+# Entrypoint (platform contract)
+#
+# MUST NOT be overridden by derived images.
+# =============================================================================
+
+ENTRYPOINT ["/usr/local/bin/runner"]
 CMD ["help"]
 
 
-# -----------------------------------------------------------------------------
-# Healthcheck
-# -----------------------------------------------------------------------------
-# Verifies that the runner is functional.
-# Does not perform any external checks.
-# -----------------------------------------------------------------------------
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD runner info >/dev/null || exit 1
+# =============================================================================
+# End of Dockerfile
+#
+# Status: CANONICAL
+#
+# This file defines platform behavior only.
+# Domain-specific concerns belong in derived images.
+# =============================================================================
