@@ -82,6 +82,7 @@ RUN apt-get update \
 # =============================================================================
 
 COPY image.manifest /tmp/image.manifest
+COPY runner-metadata.sh /usr/local/lib/runner/metadata.sh
 
 
 # =============================================================================
@@ -89,6 +90,9 @@ COPY image.manifest /tmp/image.manifest
 #
 # Fail early if the manifest schema is unsupported.
 # =============================================================================
+
+RUN . /usr/local/lib/runner/metadata.sh \
+ && runner_metadata_validate_file /tmp/image.manifest
 
 RUN grep -q '^MANIFEST_SCHEMA_VERSION=1$' /tmp/image.manifest \
  || (echo "ERROR: unsupported manifest schema version" >&2 && exit 1)
@@ -101,10 +105,14 @@ RUN grep -q '^MANIFEST_SCHEMA_VERSION=1$' /tmp/image.manifest \
 # The manifest itself MUST NOT be accessed at runtime.
 # =============================================================================
 
-RUN mkdir -p /etc/runner \
+RUN . /usr/local/lib/runner/metadata.sh \
+ && mkdir -p /etc/runner \
  && grep '^RUNNER_'  /tmp/image.manifest > /etc/runner/image.env \
  && grep '^RUNTIME_' /tmp/image.manifest > /etc/runner/runtime.env \
- && grep '^TOOL_'    /tmp/image.manifest > /etc/runner/tools.env || true \
+ && { grep '^TOOL_' /tmp/image.manifest > /etc/runner/tools.env || [[ $? -eq 1 ]]; } \
+ && runner_metadata_validate_file /etc/runner/image.env \
+ && runner_metadata_validate_file /etc/runner/runtime.env \
+ && runner_metadata_validate_file /etc/runner/tools.env \
  && chmod 0444 /etc/runner/*.env
 
 
@@ -115,7 +123,8 @@ RUN mkdir -p /etc/runner \
 # User identity is defined exclusively by the manifest.
 # =============================================================================
 
-RUN source /etc/runner/runtime.env \
+RUN . /usr/local/lib/runner/metadata.sh \
+ && runner_metadata_export_file /etc/runner/runtime.env \
  && groupadd --gid "${RUNTIME_USER_GID}" "${RUNTIME_USER_NAME}" \
  && useradd \
       --uid "${RUNTIME_USER_UID}" \

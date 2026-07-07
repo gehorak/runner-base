@@ -165,6 +165,22 @@ and are as important as positive tests.
 
 ---
 
+### Metadata Grammar Tests (`test-metadata-grammar.sh`)
+
+**Purpose**
+
+* Validate strict parsing of materialized runner metadata
+* Reject shell syntax before it can be evaluated
+* Protect build-time and runtime metadata loading paths
+
+**Guarantees**
+
+* valid metadata is accepted as literal `KEY=VALUE` data
+* invalid syntax fails with deterministic diagnostics
+* shell markers and control operators are rejected without execution
+
+---
+
 ### Image Identity Tests (`test-image-identity.sh`)
 
 **Purpose**
