@@ -61,7 +61,7 @@ RUNNER_ROLE=base
 # These values provide context, ownership, and traceability.
 # -----------------------------------------------------------------------------
 
-RUNNER_DESCRIPTION="Deterministic runner base image"
+RUNNER_DESCRIPTION=Deterministic runner base image
 RUNNER_VENDOR=gehorak
 RUNNER_LICENSE=MIT
 RUNNER_REPOSITORY=https://github.com/gehorak/runner-base
@@ -116,7 +116,8 @@ RUNTIME_WORKDIR=/workspace
 #
 # Contract rules:
 # - Keys are UPPER_SNAKE_CASE
-# - Values must be literal and shell-safe
+# - Values must be literal data
+# - Quotes and shell operators are unsupported
 # - Existing keys MUST NOT change semantics
 # - New keys may be added only in a backward-compatible manner
 #

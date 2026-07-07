@@ -30,6 +30,7 @@ set -Eeuo pipefail
 # =============================================================================
 
 readonly PLUGIN_DIR="/usr/local/lib/runner.d"
+readonly METADATA_LIB="/usr/local/lib/runner/metadata.sh"
 
 readonly IMAGE_ENV="/etc/runner/image.env"
 readonly RUNTIME_ENV="/etc/runner/runtime.env"
@@ -58,16 +59,17 @@ indent() {
 
 [[ -f "$IMAGE_ENV" ]]   || die "missing image contract (${IMAGE_ENV})"
 [[ -f "$RUNTIME_ENV" ]] || die "missing runtime contract (${RUNTIME_ENV})"
+[[ -f "$METADATA_LIB" ]] || die "missing metadata parser (${METADATA_LIB})"
 
-# shellcheck disable=SC1090
-source "$IMAGE_ENV"
-# shellcheck disable=SC1090
-source "$RUNTIME_ENV"
+# shellcheck disable=SC1091
+source "$METADATA_LIB"
+
+runner_metadata_export_file "$IMAGE_ENV"   || exit 1
+runner_metadata_export_file "$RUNTIME_ENV" || exit 1
 
 # Optional tools metadata
 if [[ -f "$TOOLS_ENV" ]]; then
-  # shellcheck disable=SC1090
-  source "$TOOLS_ENV"
+  runner_metadata_export_file "$TOOLS_ENV" || exit 1
 fi
 
 # =============================================================================

@@ -108,6 +108,7 @@ help:
 check-manifest:
 	@echo "==> Checking $(IMAGE_MANIFEST)"
 	@test -f $(IMAGE_MANIFEST) || (echo "ERROR: $(IMAGE_MANIFEST) not found" >&2 && exit 1)
+	@bash -c '. ./runner-metadata.sh && runner_metadata_validate_file "$(IMAGE_MANIFEST)"'
 	@$(AWK) -F= '/^MANIFEST_SCHEMA_VERSION=/{print $$2}' $(IMAGE_MANIFEST) | grep -qx '1' \
 	  || (echo "ERROR: Unsupported MANIFEST_SCHEMA_VERSION (expected 1)" >&2 && exit 1)
 
@@ -166,6 +167,7 @@ build: check-manifest
 test:
 	@echo "==> Running full test suite on image: $(IMAGE)"
 	@chmod +x $(CI_DIR)/*.sh
+	@IMAGE=$(IMAGE) $(CI_DIR)/test-metadata-grammar.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-smoke.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-image-identity.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-runner-core.sh
