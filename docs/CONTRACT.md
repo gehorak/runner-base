@@ -183,6 +183,11 @@ This file MUST:
 * be readable
 * contain immutable, human-readable metadata
 
+Materialized contract metadata use a strict literal `KEY=VALUE` format.
+They are parsed as data, not as shell code.
+Comments and blank lines MAY appear, but `export` prefixes, quotes,
+duplicate keys, multiline values, and shell control syntax are unsupported.
+
 ---
 
 ### Required identity fields
