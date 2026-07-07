@@ -220,6 +220,9 @@ Architectural guarantees:
 * the original manifest MUST NOT be consulted at runtime
 * materialized files are immutable at runtime
 * materialization is additive and explicit
+* materialized metadata are strict literal `KEY=VALUE` records
+* runtime metadata are parsed as data and MUST NOT be shell-evaluated
+* invalid metadata MUST fail validation before materialization or runtime use
 
 This separation ensures:
 
@@ -332,4 +335,3 @@ it is intentionally unsupported.
 **End of document**
 
 ---
-
