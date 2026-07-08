@@ -51,6 +51,22 @@ Patch and rebuild expectations:
 
 ---
 
+## Release tag discipline
+
+Public release tags SHOULD point to a dedicated release-preparation commit
+on `main`.
+
+That tag target commit SHOULD stay narrow and contain only:
+
+* changelog alignment
+* documentation alignment
+* small release-gate fixes required for truthful validation
+
+Workflow dependency pin refreshes needed for a release SHOULD land
+before the final tag target commit.
+
+---
+
 ## Scope boundary
 
 This policy applies only to `runner-base`.

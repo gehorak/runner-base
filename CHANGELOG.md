@@ -57,6 +57,7 @@
 ### Changed
 - Pinned the Debian base image by digest and exposed the base digest in OCI metadata
 - Pinned GitHub Actions workflow dependencies by commit SHA
+- Refreshed the pinned GitHub Actions workflow dependencies before the public `v0.2.3` tag target
 - CI and release contract validation now include metadata grammar coverage
 - CI, release, and local `make test` now enforce the base-image plugin directory invariant
 
@@ -69,7 +70,9 @@
 - Testing docs now reference the correct plugin test filename
 
 ### Notes
-- This release consolidates the post-`v0.2.0` hardening work into a public remediation release
+- This release consolidates the local `v0.2.1` and `v0.2.2` stabilization candidates into a public remediation release
+- The `v0.2.1` and `v0.2.2` entries below were local-only candidates and were not published as release tags
+- The public `v0.2.3` tag is intended for the dedicated release-preparation chore commit that follows the `v0.2.x` hardening series
 - `v3` / `cli contract v001` work remains explicitly out of scope
 
 ---

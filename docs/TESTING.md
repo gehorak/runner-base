@@ -1,4 +1,4 @@
-# TESTING strategy for runner platform (v0.2.0)
+# TESTING strategy for runner platform (v0.2.3)
 
 ## Purpose
 

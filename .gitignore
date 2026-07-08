@@ -24,6 +24,8 @@ desktop.ini
 .idea/
 .vscode/
 .vs/
+.agents/
+.codex/
 *.code-workspace
 
 *.swp

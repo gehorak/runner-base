@@ -13,11 +13,13 @@
 # -----------------
 # - No hidden behavior
 # - No environment auto-detection
-# - Same commands work everywhere
+# - Same commands work in supported bash-capable environments
 # - Easy to read and maintain over years
 #
 # This file is identical across all runner-* repositories.
 # =============================================================================
+
+# Local targets and contract tests are bash-based across supported environments.
 
 
 # -----------------------------------------------------------------------------
@@ -50,12 +52,12 @@ manifest = $(strip $(shell $(AWK) -F= '/^$(1)=/{print $$2}' $(IMAGE_MANIFEST)))
 # -----------------------------------------------------------------------------
 # Runtime contract (derived from manifest)
 # -----------------------------------------------------------------------------
-RUNTIME_USER_NAME := $(call manifest,RUNTIME_USER_NAME)
-RUNTIME_USER_UID  := $(call manifest,RUNTIME_USER_UID)
-RUNTIME_USER_GID  := $(call manifest,RUNTIME_USER_GID)
-RUNTIME_USER_HOME := $(call manifest,RUNTIME_USER_HOME)
-RUNTIME_SHELL     := $(call manifest,RUNTIME_SHELL)
-RUNTIME_WORKDIR   := $(call manifest,RUNTIME_WORKDIR)
+RUNTIME_USER_NAME = $(call manifest,RUNTIME_USER_NAME)
+RUNTIME_USER_UID  = $(call manifest,RUNTIME_USER_UID)
+RUNTIME_USER_GID  = $(call manifest,RUNTIME_USER_GID)
+RUNTIME_USER_HOME = $(call manifest,RUNTIME_USER_HOME)
+RUNTIME_SHELL     = $(call manifest,RUNTIME_SHELL)
+RUNTIME_WORKDIR   = $(call manifest,RUNTIME_WORKDIR)
 
 # -----------------------------------------------------------------------------
 # Helper: require variable to be non-empty
@@ -93,7 +95,7 @@ help:
 	@echo "Variables:"
 	@echo "  IMAGE_NAME=$(IMAGE_NAME)"
 	@echo "  IMAGE_TAG=$(IMAGE_TAG)"
-	@echo "  IMAGE=$(IMAGE)" Docker image tag (default: runner-base:dev)"
+	@echo "  IMAGE=$(IMAGE)  Docker image tag (default: runner-base:dev)"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make build"
