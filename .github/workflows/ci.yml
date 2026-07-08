@@ -144,6 +144,7 @@ jobs:
         run: |
           set -Eeuo pipefail
 
+          ./ci/test-metadata-grammar.sh
           ./ci/test-smoke.sh
           ./ci/test-image-identity.sh
           ./ci/test-runner-core.sh
