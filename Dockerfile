@@ -26,7 +26,10 @@
 # - NOT part of the runner contract
 # =============================================================================
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
+
+LABEL org.opencontainers.image.base.name="debian:bookworm-slim" \
+      org.opencontainers.image.base.digest="sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df"
 
 
 # =============================================================================

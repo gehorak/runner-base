@@ -167,6 +167,7 @@ docker run --rm runner-base info
 * `CHANGELOG.md` — version history
 * `docs/ARCHITECTURE.md` — platform architecture
 * `docs/CONTRACT.md` — execution and CLI contract
+* `docs/MAINTENANCE.md` — base digest, patch cadence, and rebuild policy
 * `docs/TESTING.md` — test strategy and guarantees
 
 ---

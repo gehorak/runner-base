@@ -202,7 +202,7 @@ Exact formatting is intentionally not validated.
 
 ---
 
-### Plugin Tests (`test-runner-plugins.sh`)
+### Plugin Tests (`test-runner-plugin.sh`)
 
 **Purpose**
 

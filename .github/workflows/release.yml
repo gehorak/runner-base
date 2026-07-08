@@ -78,7 +78,7 @@ jobs:
       # -----------------------------------------------------------------------
 
       - name: Checkout source at tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -145,7 +145,7 @@ jobs:
 
       - name: Define Docker image metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: |
             ghcr.io/gehorak/runner-base
@@ -160,6 +160,8 @@ jobs:
             org.opencontainers.image.version=${{ steps.semver.outputs.version }}
             org.opencontainers.image.revision=${{ steps.semver.outputs.commit }}
             org.opencontainers.image.created=${{ github.run_started_at }}
+            org.opencontainers.image.base.name=debian:bookworm-slim
+            org.opencontainers.image.base.digest=sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
 
 
       # -----------------------------------------------------------------------
@@ -167,7 +169,7 @@ jobs:
       # -----------------------------------------------------------------------
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -181,12 +183,14 @@ jobs:
       # before publication.
       # -----------------------------------------------------------------------
 
-      - name: Build image (local)
-        uses: docker/build-push-action@v6
+      - name: Build tested release image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           load: true
-          tags: runner-release:test
+          tags: |
+            runner-release:test
+            ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
 
@@ -215,28 +219,37 @@ jobs:
       # Publishing without passing the full test suite is forbidden.
       # -----------------------------------------------------------------------
 
-      - name: Run full contract test suite
+      - name: Run full contract test suite on the built release image
         shell: bash
         env:
           IMAGE: runner-release:test
         run: |
           set -Eeuo pipefail
-          make check
+          ./ci/test-metadata-grammar.sh
+          ./ci/test-smoke.sh
+          ./ci/test-image-identity.sh
+          ./ci/test-runner-core.sh
+          ./ci/test-negative.sh
 
 
       # -----------------------------------------------------------------------
-      # Publish image to GHCR
+      # Publish tested image to GHCR
       #
       # Executed only after successful build and validation.
+      # The pushed tags all reference the same locally tested image.
       # -----------------------------------------------------------------------
 
-      - name: Publish image to GHCR
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - name: Publish tested image to GHCR
+        shell: bash
+        env:
+          RELEASE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -Eeuo pipefail
+
+          while IFS= read -r tag; do
+            [[ -n "${tag}" ]] || continue
+            docker image push "${tag}"
+          done <<< "${RELEASE_TAGS}"
 
 # -----------------------------------------------------------------------------
 # End of workflow

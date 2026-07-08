@@ -49,6 +49,25 @@
 - This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.2-runtime-contract`
 - This candidate builds on `v0.2.1` metadata hardening and keeps release-chain maintenance separate
 
+## [0.2.3] - Local candidate
+
+### Added
+- Documented maintenance policy for base digest updates and monthly dependency review
+
+### Changed
+- Pinned the Debian base image by digest and exposed the base digest in OCI metadata
+- Pinned GitHub Actions workflow dependencies by commit SHA
+- CI and release contract validation now include metadata grammar coverage
+
+### Fixed
+- Release publication now pushes the same locally tested image artifact instead of rebuilding during publish
+- Local `make release` now rejects both staged and unstaged dirty state
+- Testing docs now reference the correct plugin test filename
+
+### Notes
+- This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.3-release-supply-chain`
+- This candidate builds on `v0.2.2` and keeps `v3` / `cli contract v001` work explicitly out of scope
+
 ---
 
 ## [0.2.0] – 2025-12-30
