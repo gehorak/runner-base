@@ -277,6 +277,7 @@ This contract is enforced by:
 * the automated test suite
 * CI pipelines
 * release gating
+* release gating that validates and publishes the same built image artifact
 
 If a behavior is not covered by tests,
 it is **not guaranteed**.

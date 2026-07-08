@@ -203,7 +203,7 @@ check: build test
 # -----------------------------------------------------------------------------
 release:
 	@echo "==> Validating release prerequisites"
-	@git diff --quiet || (echo "ERROR: working tree is dirty" && exit 1)
+	@git diff --quiet && git diff --cached --quiet || (echo "ERROR: working tree is dirty" && exit 1)
 	@git describe --tags --exact-match >/dev/null 2>&1 || \
 	  (echo "ERROR: HEAD is not exactly at a tag" && exit 1)
 	@echo "OK: release prerequisites satisfied"
