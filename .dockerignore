@@ -22,6 +22,8 @@
 .idea
 .vscode
 .vs
+.agents
+.codex
 *.swp
 *.swo
 *~

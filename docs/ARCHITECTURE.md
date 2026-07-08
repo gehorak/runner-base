@@ -1,9 +1,9 @@
-# ARCHITECTURE of Runner Platform (v0.2.0)
+# ARCHITECTURE of Runner Platform (v0.2.3)
 
 ## Purpose
 
 This document describes the **architectural principles, structure,
-and invariants** of the runner platform as of version **v0.2.0**.
+and invariants** of the runner platform as of version **v0.2.3**.
 
 It explains:
 
@@ -307,9 +307,9 @@ Undocumented architectural changes are considered defects.
 
 ---
 
-## Architectural invariants (v0.2.0)
+## Architectural invariants (v0.2.3)
 
-The following invariants define the runner platform in v0.2.0:
+The following invariants define the runner platform in v0.2.3:
 
 * single explicit entrypoint
 * layered responsibility separation

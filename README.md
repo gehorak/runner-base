@@ -142,6 +142,9 @@ Direct usage is intentionally limited to:
 * debugging
 * local experimentation
 
+Local `make` targets in this repository assume
+Docker and a **bash-capable environment**.
+
 Example:
 
 ```bash

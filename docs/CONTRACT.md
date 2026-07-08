@@ -1,9 +1,9 @@
-# Runner Platform CONTRACT (v0.2.0)
+# Runner Platform CONTRACT (v0.2.3)
 
 ## Purpose
 
 This document defines the **execution and interface contract**
-of the runner platform as of version **v0.2.0**.
+of the runner platform as of version **v0.2.3**.
 
 It specifies:
 
