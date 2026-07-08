@@ -28,7 +28,7 @@
 - Removed unsafe `source`-based metadata loading from build-time and runtime metadata paths
 
 ### Notes
-- This entry tracks the local stabilization candidate on `codex/runner-base-v0.2.1-metadata-hardening`
+- This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.1-metadata-hardening`
 - Runtime root rejection, explicit `HOME` / `/workspace`, and release-chain hardening remain follow-up work
 
 ---
