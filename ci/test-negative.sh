@@ -22,6 +22,27 @@ IMAGE="${IMAGE:?IMAGE variable must be set}"
 echo "==> Negative tests for image: ${IMAGE}"
 echo
 
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+expect_runner_failure() {
+  local description="$1"
+  local expected_message="$2"
+  shift 2
+  local output=""
+
+  if output="$(docker run --rm "${IMAGE}" "$@" 2>&1)"; then
+    fail "${description} succeeded unexpectedly"
+  fi
+
+  printf '%s\n' "$output" | grep -F -- "$expected_message" >/dev/null \
+    || fail "${description} did not report '${expected_message}'"
+
+  echo "OK: ${description} failed as expected"
+}
+
 
 # -----------------------------------------------------------------------------
 # Test 1: Implicit system command execution must fail
@@ -32,13 +53,10 @@ echo
 # -----------------------------------------------------------------------------
 
 echo "==> Negative: implicit system command must fail"
-
-if docker run --rm "${IMAGE}" ls >/dev/null 2>&1; then
-  echo "ERROR: implicit system command execution succeeded"
-  exit 1
-fi
-
-echo "OK: implicit system command execution failed as expected"
+expect_runner_failure \
+  "implicit system command execution" \
+  "unknown command: ls" \
+  ls
 
 
 # -----------------------------------------------------------------------------
@@ -50,13 +68,47 @@ echo "OK: implicit system command execution failed as expected"
 # -----------------------------------------------------------------------------
 
 echo "==> Negative: unknown runner command must fail"
+expect_runner_failure \
+  "unknown runner command" \
+  "unknown command: unknown" \
+  unknown
 
-if docker run --rm "${IMAGE}" unknown >/dev/null 2>&1; then
-  echo "ERROR: unknown runner command succeeded"
-  exit 1
-fi
 
-echo "OK: unknown runner command failed as expected"
+# -----------------------------------------------------------------------------
+# Test 3: Invalid plugin command names must fail before lookup
+#
+# Verifies:
+# - path traversal is rejected
+# - invalid command tokens are rejected deterministically
+# - plugin dispatch does not consult the filesystem for unsafe names
+# -----------------------------------------------------------------------------
+
+echo "==> Negative: invalid plugin command names must fail"
+
+expect_runner_failure \
+  "path traversal command '../../../../bin/bash'" \
+  "invalid command name: ../../../../bin/bash" \
+  "../../../../bin/bash"
+
+expect_runner_failure \
+  "parent traversal command '../runner'" \
+  "invalid command name: ../runner" \
+  "../runner"
+
+expect_runner_failure \
+  "whitespace command 'bad command'" \
+  "invalid command name: bad command" \
+  "bad command"
+
+expect_runner_failure \
+  "operator command 'bad;cmd'" \
+  "invalid command name: bad;cmd" \
+  "bad;cmd"
+
+expect_runner_failure \
+  "hidden command '.hidden'" \
+  "invalid command name: .hidden" \
+  ".hidden"
 
 
 # -----------------------------------------------------------------------------

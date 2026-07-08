@@ -91,7 +91,9 @@ COPY runner-metadata.sh /usr/local/lib/runner/metadata.sh
 # Fail early if the manifest schema is unsupported.
 # =============================================================================
 
-RUN . /usr/local/lib/runner/metadata.sh \
+# Source only the trusted parser library. Metadata files stay data-only.
+RUN chmod 0444 /usr/local/lib/runner/metadata.sh \
+ && . /usr/local/lib/runner/metadata.sh \
  && runner_metadata_validate_file /tmp/image.manifest
 
 RUN grep -q '^MANIFEST_SCHEMA_VERSION=1$' /tmp/image.manifest \
