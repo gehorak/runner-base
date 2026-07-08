@@ -15,6 +15,24 @@
 
 ---
 
+## [0.2.1] - Local candidate
+
+### Added
+- Strict metadata grammar validation for build-time and runtime contract files
+
+### Changed
+- Local manifest validation now treats runner metadata as literal `KEY=VALUE` data
+- Runtime metadata contract docs now describe the strict literal metadata grammar
+
+### Fixed
+- Removed unsafe `source`-based metadata loading from build-time and runtime metadata paths
+
+### Notes
+- This entry tracks the local stabilization candidate on `codex/runner-base-v0.2.1-metadata-hardening`
+- Runtime root rejection, explicit `HOME` / `/workspace`, and release-chain hardening remain follow-up work
+
+---
+
 ## [0.2.0] – 2025-12-30
 
 ### Added
