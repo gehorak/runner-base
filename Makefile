@@ -172,7 +172,7 @@ test:
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-image-identity.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-runner-core.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-negative.sh	
-	#@IMAGE=$(IMAGE) $(CI_DIR)/test-runner-plugin.sh
+	@IMAGE=$(IMAGE) $(CI_DIR)/test-runner-plugin.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-domain.sh
 	@echo "==> All tests passed"
 

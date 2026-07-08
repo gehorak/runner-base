@@ -49,7 +49,7 @@
 - This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.2-runtime-contract`
 - This candidate builds on `v0.2.1` metadata hardening and keeps release-chain maintenance separate
 
-## [0.2.3] - Local candidate
+## [0.2.3] – 2026-07-08
 
 ### Added
 - Documented maintenance policy for base digest updates and monthly dependency review
@@ -58,16 +58,19 @@
 - Pinned the Debian base image by digest and exposed the base digest in OCI metadata
 - Pinned GitHub Actions workflow dependencies by commit SHA
 - CI and release contract validation now include metadata grammar coverage
+- CI, release, and local `make test` now enforce the base-image plugin directory invariant
 
 ### Fixed
 - Release publication now pushes the same locally tested image artifact instead of rebuilding during publish
 - Local `make release` now rejects both staged and unstaged dirty state
 - Image identity tests no longer false-fail on Windows Git Bash path conversion
+- The image now creates the guaranteed empty `/usr/local/lib/runner.d` plugin directory
+- Image identity tests now verify the required `RUNNER_ROLE` field
 - Testing docs now reference the correct plugin test filename
 
 ### Notes
-- This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.3-release-supply-chain`
-- This candidate builds on `v0.2.2` and keeps `v3` / `cli contract v001` work explicitly out of scope
+- This release consolidates the post-`v0.2.0` hardening work into a public remediation release
+- `v3` / `cli contract v001` work remains explicitly out of scope
 
 ---
 

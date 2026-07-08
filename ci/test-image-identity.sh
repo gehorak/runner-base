@@ -45,6 +45,7 @@ docker run --rm "${IMAGE}" exec sh -c 'test -s /etc/runner/image.env'
 echo "==> Identity: required keys present in image.env"
 docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_IMAGE=' /etc/runner/image.env"
 docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_DOMAIN=' /etc/runner/image.env"
+docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_ROLE=' /etc/runner/image.env"
 
 
 # -----------------------------------------------------------------------------
