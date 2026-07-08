@@ -62,6 +62,7 @@
 ### Fixed
 - Release publication now pushes the same locally tested image artifact instead of rebuilding during publish
 - Local `make release` now rejects both staged and unstaged dirty state
+- Image identity tests no longer false-fail on Windows Git Bash path conversion
 - Testing docs now reference the correct plugin test filename
 
 ### Notes
