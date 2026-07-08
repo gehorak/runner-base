@@ -158,6 +158,7 @@ Exact output formatting is intentionally not tested.
 
 * implicit system command execution fails
 * unknown runner commands fail explicitly
+* invalid plugin command names fail explicitly before lookup
 * no command guessing or forwarding occurs
 
 Negative tests are **first-class contract guards**

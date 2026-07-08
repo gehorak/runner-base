@@ -73,8 +73,8 @@ RUNNER_REPOSITORY=https://github.com/gehorak/runner-base
 # Defines the default execution environment inside the container.
 # These values describe *how* the image runs, not *what* it provides.
 # -----------------------------------------------------------------------------
-# RUNTIME_USER_NAME or workspace change too in Dockerfile "Runtime defaults (apply runtime contract)"
-# must change manual and indetict in manifest Dockerfile ARG.
+# If RUNTIME_USER_NAME or RUNTIME_WORKDIR changes here, update the matching
+# Dockerfile ARG defaults manually to keep local builds aligned.
 
 
 RUNTIME_USER_NAME=runner

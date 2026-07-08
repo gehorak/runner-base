@@ -53,6 +53,10 @@ indent() {
   sed 's/^/  /'
 }
 
+runner_validate_plugin_name() {
+  [[ "$1" =~ ^[a-z][a-z0-9-]*$ ]]
+}
+
 # =============================================================================
 # Load runtime contracts (READ-ONLY)
 # =============================================================================
@@ -61,6 +65,7 @@ indent() {
 [[ -f "$RUNTIME_ENV" ]] || die "missing runtime contract (${RUNTIME_ENV})"
 [[ -f "$METADATA_LIB" ]] || die "missing metadata parser (${METADATA_LIB})"
 
+# Source only the trusted parser library. Materialized metadata stay data-only.
 # shellcheck disable=SC1091
 source "$METADATA_LIB"
 
@@ -167,7 +172,7 @@ runner_shell() {
 }
 
 runner_version() {
-  # Prefer plugin-provided version (image-specific UX)
+  # Legacy v0.2.x compatibility: allow a plugin-specific version override.
   local plugin="${PLUGIN_DIR}/version"
 
   if [[ -x "$plugin" ]]; then
@@ -201,6 +206,7 @@ case "$CMD" in
   shell)   runner_shell ;;
   version) runner_version ;;
   *)
+    runner_validate_plugin_name "$CMD" || die "invalid command name: ${CMD}"
     plugin="${PLUGIN_DIR}/${CMD}"
 
     if [[ -x "$plugin" ]]; then

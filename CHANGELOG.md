@@ -23,12 +23,15 @@
 ### Changed
 - Local manifest validation now treats runner metadata as literal `KEY=VALUE` data
 - Runtime metadata contract docs now describe the strict literal metadata grammar
+- Plugin-backed `runner version` output remains a legacy compatibility path in v0.2.x
 
 ### Fixed
 - Removed unsafe `source`-based metadata loading from build-time and runtime metadata paths
+- Rejected invalid plugin command names before filesystem lookup
 
 ### Notes
 - This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.1-metadata-hardening`
+- Runtime env files are no longer sourced directly; sourcing the trusted metadata parser library remains intentional
 - Runtime root rejection, explicit `HOME` / `/workspace`, and release-chain hardening remain follow-up work
 
 ---

@@ -150,6 +150,8 @@ The runner discovers plugins explicitly from this directory.
 * plugins are invoked only by explicit name
 * plugins are never auto-executed
 * plugins MUST NOT override core commands
+* plugin command names MUST match `^[a-z][a-z0-9-]*$`
+* invalid names MUST fail before any plugin filesystem lookup
 
 If a plugin name conflicts with a core command,
 the core command MUST take precedence.
