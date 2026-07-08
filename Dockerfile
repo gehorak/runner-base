@@ -134,7 +134,12 @@ RUN . /usr/local/lib/runner/metadata.sh \
       --home-dir "${RUNTIME_USER_HOME}" \
       --create-home \
       --shell "${RUNTIME_SHELL}" \
-      "${RUNTIME_USER_NAME}"
+      "${RUNTIME_USER_NAME}" \
+ && install -d \
+      --owner "${RUNTIME_USER_UID}" \
+      --group "${RUNTIME_USER_GID}" \
+      --mode 0755 \
+      "${RUNTIME_WORKDIR}"
 
 
 # =============================================================================
@@ -155,10 +160,13 @@ RUN chmod 0755 /usr/local/bin/runner
 # =============================================================================
 
 ARG RUNTIME_USER_NAME=runner
+ARG RUNTIME_USER_HOME=/home/runner
 ARG RUNTIME_WORKDIR=/workspace
 
 ENV RUNTIME_USER_NAME=${RUNTIME_USER_NAME}
+ENV RUNTIME_USER_HOME=${RUNTIME_USER_HOME}
 ENV RUNTIME_WORKDIR=${RUNTIME_WORKDIR}
+ENV HOME=${RUNTIME_USER_HOME}
 
 WORKDIR ${RUNTIME_WORKDIR}
 USER ${RUNTIME_USER_NAME}

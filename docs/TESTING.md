@@ -119,6 +119,8 @@ and a well-defined scope.
 * the image can be executed
 * the runner responds to basic commands
 * the runtime user is non-root
+* `HOME` is explicit and writable for the runtime user
+* the default workspace exists and is writable for the runtime user
 
 ---
 
@@ -160,6 +162,7 @@ Exact output formatting is intentionally not tested.
 * unknown runner commands fail explicitly
 * invalid plugin command names fail explicitly before lookup
 * no command guessing or forwarding occurs
+* effective UID `0` is rejected even if the container runtime overrides the image user
 
 Negative tests are **first-class contract guards**
 and are as important as positive tests.

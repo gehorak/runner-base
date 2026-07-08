@@ -226,9 +226,20 @@ All runner images MUST:
 * run as a non-root user
 * avoid implicit privilege escalation
 * require explicit intent for shell access
+* reject effective UID `0` at runtime, even if the container runtime overrides the configured image user
 
 Running the container as root is considered
 a **contract violation**.
+
+---
+
+### Home and workspace
+
+All runner images MUST:
+
+* set `HOME` to the declared runtime home
+* expose the declared runtime workdir as the default working directory
+* ensure the declared runtime workdir exists and is writable for the runtime user
 
 ---
 

@@ -77,6 +77,8 @@ if [[ -f "$TOOLS_ENV" ]]; then
   runner_metadata_export_file "$TOOLS_ENV" || exit 1
 fi
 
+[[ "$(id -u)" != "0" ]] || die "runner must not run as root (uid 0)"
+
 # =============================================================================
 # Core commands (BUILT-IN)
 # =============================================================================
