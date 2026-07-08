@@ -58,6 +58,7 @@ This image provides:
 * a minimal and explicit runtime environment
 * a strict, single execution entrypoint
 * a **non-root execution model**
+* an explicit `HOME` and writable default `/workspace`
 
 The base image includes **no domain-specific plugins**.
 
@@ -204,4 +205,3 @@ Responsibility for the project remains **fully human-owned**.
 
 If a behavior is not explicit,
 it is considered unsupported.
-

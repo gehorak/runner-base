@@ -18,6 +18,12 @@ set -Eeuo pipefail
 # -----------------------------------------------------------------------------
 
 IMAGE="${IMAGE:?IMAGE variable must be set}"
+TMP_DIR="$(mktemp -d)"
+
+cleanup() {
+  rm -rf "${TMP_DIR}"
+}
+trap cleanup EXIT
 
 echo "==> Negative tests for image: ${IMAGE}"
 echo
@@ -109,6 +115,28 @@ expect_runner_failure \
   "hidden command '.hidden'" \
   "invalid command name: .hidden" \
   ".hidden"
+
+
+# -----------------------------------------------------------------------------
+# Test 3: Root override must fail
+#
+# Verifies:
+# - the runtime contract rejects uid 0 even if the container runtime overrides
+#   the configured image user
+# -----------------------------------------------------------------------------
+
+echo "==> Negative: root override must fail"
+
+root_err="${TMP_DIR}/root.err"
+if docker run --rm --user 0 "${IMAGE}" info >/dev/null 2>"${root_err}"; then
+  echo "ERROR: root override succeeded"
+  exit 1
+fi
+
+grep -F "ERROR: runner must not run as root (uid 0)" "${root_err}" >/dev/null \
+  || (echo "ERROR: root override did not return deterministic diagnostic" && exit 1)
+
+echo "OK: root override failed as expected"
 
 
 # -----------------------------------------------------------------------------

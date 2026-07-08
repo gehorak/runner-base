@@ -52,7 +52,31 @@ docker run --rm "${IMAGE}" exec whoami | grep -qx 'runner'
 
 
 # -----------------------------------------------------------------------------
-# Test 3: Explicit system command execution
+# Test 3: HOME is explicit and writable
+#
+# Verifies:
+# - HOME is pinned to the declared runtime home
+# - the runtime home exists and is writable
+# -----------------------------------------------------------------------------
+
+echo "==> Smoke: HOME is explicit and writable"
+docker run --rm "${IMAGE}" exec sh -c 'test "$HOME" = "/home/runner" && test -d "$HOME" && test -w "$HOME"'
+
+
+# -----------------------------------------------------------------------------
+# Test 4: Default workspace exists and is writable
+#
+# Verifies:
+# - the declared runtime workspace exists
+# - the runtime user can write to it without a bind mount
+# -----------------------------------------------------------------------------
+
+echo "==> Smoke: workspace exists and is writable"
+docker run --rm "${IMAGE}" exec sh -c 'test -d /workspace && test -w /workspace && probe=/workspace/.runner-smoke-write && : > "$probe" && rm "$probe"'
+
+
+# -----------------------------------------------------------------------------
+# Test 5: Explicit system command execution
 #
 # Verifies:
 # - 'exec' escape hatch works

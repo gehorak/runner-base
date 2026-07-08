@@ -34,6 +34,21 @@
 - Runtime env files are no longer sourced directly; sourcing the trusted metadata parser library remains intentional
 - Runtime root rejection, explicit `HOME` / `/workspace`, and release-chain hardening remain follow-up work
 
+## [0.2.2] - Local candidate
+
+### Added
+- Explicit runtime `HOME` and writable default `/workspace` guarantees
+
+### Changed
+- Runtime contract and test coverage now describe writable home/workspace expectations explicitly
+
+### Fixed
+- Rejected runtime root overrides that would bypass the non-root contract
+
+### Notes
+- This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.2-runtime-contract`
+- This candidate builds on `v0.2.1` metadata hardening and keeps release-chain maintenance separate
+
 ---
 
 ## [0.2.0] – 2025-12-30
