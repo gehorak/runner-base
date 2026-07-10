@@ -213,6 +213,24 @@ jobs:
 
 
       # -----------------------------------------------------------------------
+      # Ensure test script executability
+      #
+      # Rationale:
+      # - file mode may not be preserved across platforms
+      # - release validation must not depend on checkout-side executable bits
+      # -----------------------------------------------------------------------
+
+      - name: Ensure CI test scripts are executable
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          for f in ci/*.sh; do
+            [ -x "$f" ] || chmod 0755 "$f"
+          done
+
+
+      # -----------------------------------------------------------------------
       # Full contract validation (CI invariant)
       #
       # Release MUST re-validate the full runner contract.
