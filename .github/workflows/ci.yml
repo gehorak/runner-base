@@ -64,9 +64,16 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install pinned shfmt
-        uses: mfinelli/setup-shfmt@a25fda4c1fe115aec0f85e04126610841bc3141d # v4.0.1
-        with:
-          shfmt-version: v3.13.1
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          shfmt_path="${RUNNER_TEMP}/shfmt.download"
+          curl --fail --location --silent --show-error \
+            --output "${shfmt_path}" \
+            https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64
+          echo "fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1  ${shfmt_path}" | sha256sum --check --status
+          install -m 0755 "${shfmt_path}" "${RUNNER_TEMP}/shfmt"
+          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
 
       - name: Run Bash syntax and shfmt checks
         shell: bash
