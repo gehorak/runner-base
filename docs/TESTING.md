@@ -98,6 +98,24 @@ The test suite is divided into **clear, non-overlapping categories**.
 Each category has exactly one responsibility
 and a well-defined scope.
 
+### CLI v001 Contract Fixtures (`validate-cli-v001-contract.py`)
+
+**Purpose**
+
+* validate the future v0.3.0 CLI contract before dispatcher implementation
+* keep JSON schemas, deterministic examples, human snapshots, and migration behavior cases aligned
+* prove CLI-01 through CLI-03 without changing current v0.2.x runtime behavior
+
+**Characteristics**
+
+* uses only the Python standard library
+* runs without Docker and without executing `runner`
+* validates a documented JSON Schema subset plus cross-file invariants and negative self-checks
+
+**Boundary**
+
+Passing this fixture gate means the target contract is internally reviewable. It does not mean that CLI v001 is implemented, released, or supported by the current image.
+
 ---
 
 ### Smoke Tests (`test-smoke.sh`)
@@ -266,6 +284,8 @@ Tests are designed to be:
 * runnable via `make test`
 * readable in terminal output
 * fast enough for frequent execution
+
+The future CLI contract fixture gate is also available independently through `make contract` or `python ci/validate-cli-v001-contract.py`.
 
 ### CI pipelines
 

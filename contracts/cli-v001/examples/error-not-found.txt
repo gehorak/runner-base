@@ -1,0 +1,2 @@
+RUNNER_E_NOT_FOUND: Unknown tool: tofu
+Hint: Run 'runner tool --format text' to list available tools.

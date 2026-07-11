@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "runner": {
+    "name": "runner",
+    "version": "0.3.0",
+    "contract_version": "v001"
+  },
+  "image": {
+    "name": "runner-terraform",
+    "version": "0.3.0",
+    "domain": "terraform",
+    "role": "infrastructure-tooling",
+    "revision": "1111111111111111111111111111111111111111"
+  },
+  "runtime": {
+    "platform": "linux",
+    "architecture": "amd64",
+    "user": "runner",
+    "home": "/home/runner",
+    "workdir": "/workspace",
+    "shell": "/bin/bash"
+  },
+  "tools": [
+    {
+      "name": "terraform",
+      "version": "1.14.3",
+      "aliases": ["tf"]
+    }
+  ]
+}

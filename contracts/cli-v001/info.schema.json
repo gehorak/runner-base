@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://runner.invalid/contracts/cli-v001/info.schema.json",
+  "title": "Runner CLI v001 info output",
+  "type": "object",
+  "required": ["schema_version", "runner", "image", "runtime", "tools"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "runner": {
+      "type": "object",
+      "required": ["name", "version", "contract_version"],
+      "properties": {
+        "name": {"const": "runner"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "contract_version": {"const": "v001"}
+      },
+      "additionalProperties": true
+    },
+    "image": {
+      "type": "object",
+      "required": ["name", "version", "domain", "role"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "domain": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["platform", "architecture", "user", "home", "workdir", "shell"],
+      "properties": {
+        "platform": {"const": "linux"},
+        "architecture": {"const": "amd64"},
+        "user": {"type": "string", "minLength": 1},
+        "home": {"type": "string", "pattern": "^/"},
+        "workdir": {"type": "string", "pattern": "^/"},
+        "shell": {"type": "string", "pattern": "^/"}
+      },
+      "additionalProperties": true
+    },
+    "tools": {
+      "type": "array",
+      "items": {"$ref": "tool-list.schema.json#/$defs/tool"}
+    }
+  },
+  "additionalProperties": true
+}

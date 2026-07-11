@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://runner.invalid/contracts/cli-v001/behavior-cases.schema.json",
+  "title": "Runner CLI v001 behavior cases",
+  "type": "object",
+  "required": ["schema_version", "cases"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "phase", "argv", "exit", "stdout", "stderr", "child_passthrough"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+          "phase": {"enum": ["canonical", "bridge", "cutover"]},
+          "argv": {"type": "array", "items": {"type": "string"}},
+          "exit": {
+            "oneOf": [
+              {"type": "integer", "minimum": 0},
+              {"const": "child"}
+            ]
+          },
+          "stdout": {"type": ["string", "null"]},
+          "stderr": {"type": ["string", "null"]},
+          "child_passthrough": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

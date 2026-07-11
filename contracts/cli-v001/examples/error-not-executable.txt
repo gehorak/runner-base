@@ -1,0 +1,2 @@
+RUNNER_E_NOT_EXECUTABLE: Tool is registered but cannot be executed: terraform
+Hint: Verify the tool path and executable permissions in the derived image.

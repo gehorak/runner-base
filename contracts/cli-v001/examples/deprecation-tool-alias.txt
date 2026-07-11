@@ -1,0 +1,1 @@
+DEPRECATED: tool alias 'tf' will be removed in v1.0.0; use canonical tool name 'terraform'.

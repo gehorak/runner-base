@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id": "canonical-help", "phase": "canonical", "argv": ["--help"], "exit": 0, "stdout": "examples/help.txt", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-version", "phase": "canonical", "argv": ["--version"], "exit": 0, "stdout": "examples/version.txt", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-info-text", "phase": "canonical", "argv": ["info", "--format", "text"], "exit": 0, "stdout": "examples/info.txt", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-info-json", "phase": "canonical", "argv": ["info", "--format", "json"], "exit": 0, "stdout": "examples/info.json", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-tool-list-default", "phase": "canonical", "argv": ["tool"], "exit": 0, "stdout": "examples/tools.txt", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-tool-list-text", "phase": "canonical", "argv": ["tool", "--format", "text"], "exit": 0, "stdout": "examples/tools.txt", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-tool-list-json", "phase": "canonical", "argv": ["tool", "--format", "json"], "exit": 0, "stdout": "examples/tools.json", "stderr": null, "child_passthrough": false},
+    {"id": "canonical-tool-invoke", "phase": "canonical", "argv": ["tool", "terraform", "version"], "exit": "child", "stdout": null, "stderr": null, "child_passthrough": true},
+    {"id": "canonical-exec", "phase": "canonical", "argv": ["exec", "--", "printf", "%s", "hello"], "exit": "child", "stdout": null, "stderr": null, "child_passthrough": true},
+    {"id": "canonical-shell", "phase": "canonical", "argv": ["shell"], "exit": "child", "stdout": null, "stderr": null, "child_passthrough": true},
+    {"id": "error-invalid-format", "phase": "canonical", "argv": ["info", "--format", "yaml"], "exit": 2, "stdout": null, "stderr": "examples/error-format.txt", "child_passthrough": false},
+    {"id": "error-exec-missing-delimiter", "phase": "canonical", "argv": ["exec", "printf", "hello"], "exit": 2, "stdout": null, "stderr": "examples/error-usage.txt", "child_passthrough": false},
+    {"id": "error-exec-missing-program", "phase": "canonical", "argv": ["exec", "--"], "exit": 2, "stdout": null, "stderr": "examples/error-usage.txt", "child_passthrough": false},
+    {"id": "error-invalid-metadata", "phase": "canonical", "argv": ["info", "--format", "text"], "exit": 3, "stdout": null, "stderr": "examples/error-contract.txt", "child_passthrough": false},
+    {"id": "error-unknown-command", "phase": "canonical", "argv": ["deploy"], "exit": 4, "stdout": null, "stderr": "examples/error-not-found-command.txt", "child_passthrough": false},
+    {"id": "error-unknown-tool", "phase": "canonical", "argv": ["tool", "tofu", "version"], "exit": 4, "stdout": null, "stderr": "examples/error-not-found.txt", "child_passthrough": false},
+    {"id": "error-invalid-metadata-json", "phase": "canonical", "argv": ["info", "--format", "json"], "exit": 3, "stdout": null, "stderr": "examples/error.json", "child_passthrough": false},
+    {"id": "error-tool-not-executable", "phase": "canonical", "argv": ["tool", "terraform", "version"], "exit": 126, "stdout": null, "stderr": "examples/error-not-executable.txt", "child_passthrough": false},
+    {"id": "bridge-about", "phase": "bridge", "argv": ["about"], "exit": 0, "stdout": "examples/info.txt", "stderr": "examples/deprecation-about.txt", "child_passthrough": false},
+    {"id": "bridge-version", "phase": "bridge", "argv": ["version"], "exit": 0, "stdout": "examples/version.txt", "stderr": "examples/deprecation-version.txt", "child_passthrough": false},
+    {"id": "bridge-direct-tool", "phase": "bridge", "argv": ["terraform", "version"], "exit": "child", "stdout": null, "stderr": "examples/deprecation-tool.txt", "child_passthrough": true},
+    {"id": "bridge-tool-name-alias", "phase": "bridge", "argv": ["tool", "tf", "version"], "exit": "child", "stdout": null, "stderr": "examples/deprecation-tool-alias.txt", "child_passthrough": true},
+    {"id": "bridge-exec-without-delimiter", "phase": "bridge", "argv": ["exec", "printf", "%s", "hello"], "exit": "child", "stdout": null, "stderr": "examples/deprecation-exec.txt", "child_passthrough": true},
+    {"id": "cutover-about-removed", "phase": "cutover", "argv": ["about"], "exit": 4, "stdout": null, "stderr": "examples/error-not-found-command.txt", "child_passthrough": false},
+    {"id": "cutover-version-removed", "phase": "cutover", "argv": ["version"], "exit": 4, "stdout": null, "stderr": "examples/error-not-found-command.txt", "child_passthrough": false},
+    {"id": "cutover-direct-tool-removed", "phase": "cutover", "argv": ["terraform", "version"], "exit": 4, "stdout": null, "stderr": "examples/error-not-found-command.txt", "child_passthrough": false},
+    {"id": "cutover-tool-name-alias-removed", "phase": "cutover", "argv": ["tool", "tf", "version"], "exit": 4, "stdout": null, "stderr": "examples/error-not-found.txt", "child_passthrough": false},
+    {"id": "cutover-exec-delimiter-required", "phase": "cutover", "argv": ["exec", "printf", "hello"], "exit": 2, "stdout": null, "stderr": "examples/error-usage.txt", "child_passthrough": false}
+  ]
+}

@@ -95,6 +95,17 @@ jobs:
             .
 
 
+      # -----------------------------------------------------------------------
+      # Validate the future CLI contract without activating runtime behavior
+      # -----------------------------------------------------------------------
+
+      - name: Validate CLI v001 contract fixtures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python ci/validate-cli-v001-contract.py
+
+
       # ===========================================================================
       # Test steps
       #

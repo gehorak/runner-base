@@ -1,0 +1,2 @@
+RUNNER_E_USAGE: Canonical exec requires '--' followed by a program.
+Hint: Use 'runner exec -- <program> [arguments...]'.

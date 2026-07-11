@@ -71,7 +71,7 @@ endef
 # Phony targets
 # -----------------------------------------------------------------------------
 
-.PHONY: help build test smoke lint clean check-manifest print-manifest check release
+.PHONY: help build test smoke contract lint clean check-manifest print-manifest check release
 
 
 # -----------------------------------------------------------------------------
@@ -85,6 +85,7 @@ help:
 	@echo "  build        	Build the Docker image locally"
 	@echo "  test         	Run all local tests (same as CI)"
 	@echo "  smoke        	Run basic smoke tests only"
+	@echo "  contract     	Validate future CLI v001 contract fixtures"
 	@echo "  check          Build + test (repository invariant)"
 	@echo "  release        Validate local release prerequisites"
 	@echo "  lint         	Lint the runner script"
@@ -166,7 +167,7 @@ build: check-manifest
 # If this target passes locally, CI SHOULD pass as well.
 # -----------------------------------------------------------------------------
 
-test:
+test: contract
 	@echo "==> Running full test suite on image: $(IMAGE)"
 	@chmod +x $(CI_DIR)/*.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-metadata-grammar.sh
@@ -191,6 +192,14 @@ smoke:
 	@chmod +x $(CI_DIR)/*.sh
 	@IMAGE=$(IMAGE) $(CI_DIR)/test-smoke.sh
 	@echo "==> Smoke tests passed"
+
+
+# -----------------------------------------------------------------------------
+# Future CLI contract fixtures (runtime-neutral)
+# -----------------------------------------------------------------------------
+
+contract:
+	@python ci/validate-cli-v001-contract.py
 
 
 # -----------------------------------------------------------------------------

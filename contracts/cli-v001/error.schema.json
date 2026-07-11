@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://runner.invalid/contracts/cli-v001/error.schema.json",
+  "title": "Runner CLI v001 structured error",
+  "type": "object",
+  "required": ["schema_version", "error"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "error": {
+      "type": "object",
+      "required": ["id", "message", "hint"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^RUNNER_E_[A-Z0-9_]+$"},
+        "message": {"type": "string", "minLength": 1},
+        "hint": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,10 @@
+Runner: runner 0.3.0 (contract v001)
+Image: runner-terraform 0.3.0
+Domain: terraform
+Role: infrastructure-tooling
+Runtime: linux/amd64
+User: runner
+Home: /home/runner
+Workdir: /workspace
+Shell: /bin/bash
+Tools: terraform 1.14.3

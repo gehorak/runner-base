@@ -1,0 +1,14 @@
+Usage:
+  runner --help
+  runner --version
+  runner info --format text|json
+  runner tool [--format text|json]
+  runner tool <name> [arguments...]
+  runner exec -- <program> [arguments...]
+  runner shell
+
+Commands:
+  info     Show Runner, image, runtime, and tool metadata.
+  tool     List tools or invoke one by canonical name.
+  exec     Execute an explicit program after the required -- delimiter.
+  shell    Start an interactive shell for human debugging.

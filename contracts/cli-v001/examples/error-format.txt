@@ -1,0 +1,2 @@
+RUNNER_E_FORMAT: Unsupported format: yaml
+Hint: Use '--format text' or '--format json'.

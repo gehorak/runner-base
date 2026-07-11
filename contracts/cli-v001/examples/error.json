@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "error": {
+    "id": "RUNNER_E_CONTRACT",
+    "message": "Required Runner metadata is missing or invalid.",
+    "hint": "Rebuild the image from valid declarative Runner metadata."
+  }
+}

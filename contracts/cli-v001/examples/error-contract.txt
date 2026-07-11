@@ -1,0 +1,2 @@
+RUNNER_E_CONTRACT: Required Runner metadata is missing or invalid.
+Hint: Rebuild the image from valid declarative Runner metadata.
