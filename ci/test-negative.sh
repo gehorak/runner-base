@@ -20,6 +20,8 @@ set -Eeuo pipefail
 IMAGE="${IMAGE:?IMAGE variable must be set}"
 TMP_DIR="$(mktemp -d)"
 
+# shellcheck disable=SC2317
+# cleanup is invoked by the EXIT trap below.
 cleanup() {
   rm -rf "${TMP_DIR}"
 }
@@ -43,12 +45,11 @@ expect_runner_failure() {
     fail "${description} succeeded unexpectedly"
   fi
 
-  printf '%s\n' "$output" | grep -F -- "$expected_message" >/dev/null \
-    || fail "${description} did not report '${expected_message}'"
+  printf '%s\n' "$output" | grep -F -- "$expected_message" >/dev/null ||
+    fail "${description} did not report '${expected_message}'"
 
   echo "OK: ${description} failed as expected"
 }
-
 
 # -----------------------------------------------------------------------------
 # Test 1: Implicit system command execution must fail
@@ -64,7 +65,6 @@ expect_runner_failure \
   "unknown command: ls" \
   ls
 
-
 # -----------------------------------------------------------------------------
 # Test 2: Unknown runner command must fail
 #
@@ -78,7 +78,6 @@ expect_runner_failure \
   "unknown runner command" \
   "unknown command: unknown" \
   unknown
-
 
 # -----------------------------------------------------------------------------
 # Test 3: Invalid plugin command names must fail before lookup
@@ -116,7 +115,6 @@ expect_runner_failure \
   "invalid command name: .hidden" \
   ".hidden"
 
-
 # -----------------------------------------------------------------------------
 # Test 3: Root override must fail
 #
@@ -133,11 +131,10 @@ if docker run --rm --user 0 "${IMAGE}" info >/dev/null 2>"${root_err}"; then
   exit 1
 fi
 
-grep -F "ERROR: runner must not run as root (uid 0)" "${root_err}" >/dev/null \
-  || (echo "ERROR: root override did not return deterministic diagnostic" && exit 1)
+grep -F "ERROR: runner must not run as root (uid 0)" "${root_err}" >/dev/null ||
+  (echo "ERROR: root override did not return deterministic diagnostic" && exit 1)
 
 echo "OK: root override failed as expected"
-
 
 # -----------------------------------------------------------------------------
 # Test completion

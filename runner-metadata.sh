@@ -15,8 +15,10 @@ runner_metadata_validate_value() {
   local line_no="$2"
   local value="$3"
 
+  # shellcheck disable=SC2016
+  # Literal shell markers are deliberately matched without expansion.
   case "$value" in
-    *\"*|*"'"*)
+    *\"* | *"'"*)
       runner_metadata_error "$file" "$line_no" "quotes are not supported"
       return 1
       ;;
@@ -55,6 +57,8 @@ runner_metadata_validate_value() {
   esac
 }
 
+# shellcheck disable=SC2094
+# The parser only reads file; diagnostics merely include its path.
 runner_metadata_parse_file() {
   local file="$1"
   local callback="${2:-}"
@@ -105,7 +109,7 @@ runner_metadata_parse_file() {
     if [[ -n "$callback" ]]; then
       "$callback" "$key" "$value" || return 1
     fi
-  done < "$file"
+  done <"$file"
 }
 
 runner_metadata_validate_file() {
@@ -117,6 +121,8 @@ runner_metadata_export_pair() {
   local value="$2"
 
   printf -v "$key" '%s' "$value"
+  # shellcheck disable=SC2163
+  # printf -v created the validated dynamic variable named by $key.
   export "$key"
 }
 

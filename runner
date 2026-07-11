@@ -61,15 +61,16 @@ runner_validate_plugin_name() {
 # Load runtime contracts (READ-ONLY)
 # =============================================================================
 
-[[ -f "$IMAGE_ENV" ]]   || die "missing image contract (${IMAGE_ENV})"
+[[ -f "$IMAGE_ENV" ]] || die "missing image contract (${IMAGE_ENV})"
 [[ -f "$RUNTIME_ENV" ]] || die "missing runtime contract (${RUNTIME_ENV})"
 [[ -f "$METADATA_LIB" ]] || die "missing metadata parser (${METADATA_LIB})"
 
 # Source only the trusted parser library. Materialized metadata stay data-only.
-# shellcheck disable=SC1091
+# shellcheck disable=SC1090,SC1091
+# METADATA_LIB is a fixed trusted parser path, not untrusted metadata.
 source "$METADATA_LIB"
 
-runner_metadata_export_file "$IMAGE_ENV"   || exit 1
+runner_metadata_export_file "$IMAGE_ENV" || exit 1
 runner_metadata_export_file "$RUNTIME_ENV" || exit 1
 
 # Optional tools metadata
@@ -201,11 +202,11 @@ CMD="${1:-help}"
 shift || true
 
 case "$CMD" in
-  help)    runner_help ;;
-  about)   runner_about ;;
-  info)    runner_info ;;
-  exec)    runner_exec "$@" ;;
-  shell)   runner_shell ;;
+  help) runner_help ;;
+  about) runner_about ;;
+  info) runner_info ;;
+  exec) runner_exec "$@" ;;
+  shell) runner_shell ;;
   version) runner_version ;;
   *)
     runner_validate_plugin_name "$CMD" || die "invalid command name: ${CMD}"

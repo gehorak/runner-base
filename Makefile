@@ -35,6 +35,7 @@ IMAGE_NAME ?= runner-base
 IMAGE_TAG  ?= dev
 # Fully qualified image reference
 IMAGE := $(IMAGE_NAME):$(IMAGE_TAG)
+PLATFORM ?= linux/amd64
 
 
 # Docker build context (usually repository root)
@@ -43,6 +44,7 @@ BUILD_CONTEXT ?= .
 CI_DIR := ci
 IMAGE_MANIFEST := image.manifest
 AWK ?= awk
+PYTHON ?= python3
 
 # -----------------------------------------------------------------------------
 # Helper: read KEY=value from manifest
@@ -97,6 +99,7 @@ help:
 	@echo "  IMAGE_NAME=$(IMAGE_NAME)"
 	@echo "  IMAGE_TAG=$(IMAGE_TAG)"
 	@echo "  IMAGE=$(IMAGE)  Docker image tag (default: runner-base:dev)"
+	@echo "  PLATFORM=$(PLATFORM)  Supported platform (default: linux/amd64)"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make build"
@@ -147,6 +150,7 @@ print-manifest: check-manifest
 build: check-manifest
 	@echo "==> Building image: $(IMAGE)"
 	docker build \
+	  --platform $(PLATFORM) \
 	  --build-arg RUNTIME_USER_NAME=$(RUNTIME_USER_NAME) \
 	  --build-arg RUNTIME_USER_UID=$(RUNTIME_USER_UID) \
 	  --build-arg RUNTIME_USER_GID=$(RUNTIME_USER_GID) \
@@ -167,17 +171,9 @@ build: check-manifest
 # If this target passes locally, CI SHOULD pass as well.
 # -----------------------------------------------------------------------------
 
-test: contract
+test:
 	@echo "==> Running full test suite on image: $(IMAGE)"
-	@chmod +x $(CI_DIR)/*.sh
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-metadata-grammar.sh
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-smoke.sh
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-image-identity.sh
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-runner-core.sh
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-negative.sh	
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-runner-plugin.sh
-	@IMAGE=$(IMAGE) $(CI_DIR)/test-domain.sh
-	@echo "==> All tests passed"
+	@IMAGE=$(IMAGE) bash $(CI_DIR)/run-base-tests.sh
 
 
 # -----------------------------------------------------------------------------
@@ -199,7 +195,7 @@ smoke:
 # -----------------------------------------------------------------------------
 
 contract:
-	@python ci/validate-cli-v001-contract.py
+	@$(PYTHON) ci/validate-cli-v001-contract.py
 
 
 # -----------------------------------------------------------------------------
@@ -225,9 +221,9 @@ release:
 # -----------------------------------------------------------------------------
 
 lint:
-	@echo "==> Linting runner script"
-	bash -n runner
-	shellcheck runner
+	@echo "==> Linting distributed shell surface"
+	@bash $(CI_DIR)/lint-shell.sh
+	@shellcheck runner runner-metadata.sh $(CI_DIR)/*.sh
 
 
 # -----------------------------------------------------------------------------

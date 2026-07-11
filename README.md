@@ -13,6 +13,8 @@ The image follows a **strict execution model** focused on:
 This repository is the **base component of the runner tooling platform**.
 All domain-specific runner images are built on top of this image.
 
+Current observed public release: `v0.2.4`. The local `v0.2.6` work is an unreleased legacy stabilization target; the CLI v001 document is a future v0.3.0 target, not current runtime behavior.
+
 ---
 
 ## What this image is
@@ -171,8 +173,14 @@ docker run --rm runner-base info
 * `docs/ARCHITECTURE.md` — platform architecture
 * `docs/CONTRACT.md` — execution and CLI contract
 * `docs/CLI-V001.md` — future CLI target for v0.3.0; not current v0.2.x behavior
+* `docs/USAGE.md` — immutable-reference and workspace usage guidance
+* `docs/SECURITY.md` — operator security model and container hardening guidance
+* `docs/DERIVED-IMAGES.md` — normative derived-image authoring contract
+* `docs/TROUBLESHOOTING.md` — mount, network, metadata, and root-override diagnostics
+* `docs/RELEASES.md` — platform scope, evidence, rollback, yanking, and signing policy
 * `docs/MAINTENANCE.md` — base digest, patch cadence, and rebuild policy
 * `docs/TESTING.md` — test strategy and guarantees
+* `release/README.md` — machine-readable release evidence assets
 
 ---
 

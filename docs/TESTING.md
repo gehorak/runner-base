@@ -1,4 +1,4 @@
-# TESTING strategy for runner platform (v0.2.3)
+# TESTING strategy for runner platform (legacy v0.2.x)
 
 ## Purpose
 
@@ -115,6 +115,14 @@ and a well-defined scope.
 **Boundary**
 
 Passing this fixture gate means the target contract is internally reviewable. It does not mean that CLI v001 is implemented, released, or supported by the current image.
+
+### Shell Safety and Base Dependency Tests
+
+`test-shell-safety.sh` rejects dynamic evaluation and missing temporary-state cleanup in Runner shell code. `test-base-dependencies.sh` verifies the documented base-owned tools and rejects unapproved duplicate utilities such as `wget` and `jq`.
+
+`test-release-evidence.sh` writes a synthetic, deterministic evidence record and verifies that both a valid record and an invalid mutable image reference are handled correctly. It does not publish an image or create an attestation.
+
+The shared `run-base-tests.sh` sequence is the only base release invariant. It is used by Make, CI, and the release workflow. `test-domain.sh` remains a template for derived repositories and is not part of base test success.
 
 ---
 

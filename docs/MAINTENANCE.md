@@ -49,6 +49,29 @@ Patch and rebuild expectations:
 * every release candidate MUST pass the focused contract test suite before publication
 * the release workflow MUST publish the same built image artifact that passed validation
 
+## Supported platform
+
+The only supported and publicly tested platform is `linux/amd64`. A multi-architecture claim requires explicit build and test evidence before it is documented.
+
+## Reproducibility level
+
+The parent image digest and GitHub Action references are pinned. APT package versions are intentionally not individually pinned, so the image is not bit-for-bit reproducible across time. Release rebuilds, monthly dependency review, SBOM generation, provenance attestation, and public release evidence provide the operational traceability required for this maturity level.
+
+## Base dependency inventory
+
+Every installed package has a base-owned reason. Domain-specific tools belong in derived images.
+
+| Dependency | Base-owned reason |
+| --- | --- |
+| `ca-certificates` | TLS trust for reviewed HTTPS clients. |
+| `bash`, `coreutils`, `grep`, `sed`, `mawk` | Runner execution, contract inspection, and portable shell automation. |
+| `curl` | Common explicit HTTPS retrieval utility. |
+| `git`, `openssh-client` | Explicit source-control and reviewed SSH transport use. |
+| `gnupg` | Explicit signature verification for operator workflows. |
+| `tar`, `gzip`, `zip`, `unzip` | Common archive handling in automation. |
+
+`wget` is removed as a duplicate HTTP client. `jq` is not a base dependency and is not required by the CLI contract.
+
 ---
 
 ## Release tag discipline

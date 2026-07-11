@@ -1,9 +1,9 @@
-# Runner Platform CONTRACT (v0.2.3)
+# Runner Platform CONTRACT (legacy v0.2.x)
 
 ## Purpose
 
 This document defines the **execution and interface contract**
-of the runner platform as of version **v0.2.3**.
+of the current legacy v0.2.x runner platform.
 
 It specifies:
 
@@ -267,6 +267,8 @@ Derived images MUST NOT:
 * remove or alter core commands
 * introduce implicit behavior
 * weaken non-root guarantees
+
+See `docs/DERIVED-IMAGES.md` for the normative authoring boundary and `docs/CLI-V001.md` for the future, not-yet-implemented CLI target.
 
 ---
 

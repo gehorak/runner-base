@@ -61,7 +61,6 @@ RUN apt-get update \
       bash \
       coreutils \
       curl \
-      wget \
       git \
       openssh-client \
       gnupg \

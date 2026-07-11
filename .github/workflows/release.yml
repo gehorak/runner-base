@@ -45,8 +45,10 @@ on:
 # -----------------------------------------------------------------------------
 
 permissions:
-  contents: read
+  contents: write
   packages: write
+  attestations: write
+  id-token: write
 
 
 # -----------------------------------------------------------------------------
@@ -114,10 +116,12 @@ jobs:
           VERSION_MM="${MAJOR}.${MINOR}"
           COMMIT_SHA="$(git rev-parse HEAD)"
 
-          echo "tag=${TAG}"              >> "${GITHUB_OUTPUT}"
-          echo "version=${VERSION}"      >> "${GITHUB_OUTPUT}"
-          echo "version_mm=${VERSION_MM}" >> "${GITHUB_OUTPUT}"
-          echo "commit=${COMMIT_SHA}"    >> "${GITHUB_OUTPUT}"
+          {
+            echo "tag=${TAG}"
+            echo "version=${VERSION}"
+            echo "version_mm=${VERSION_MM}"
+            echo "commit=${COMMIT_SHA}"
+          } >> "${GITHUB_OUTPUT}"
 
 
       # -----------------------------------------------------------------------
@@ -159,7 +163,6 @@ jobs:
             org.opencontainers.image.source=https://github.com/gehorak/runner-base
             org.opencontainers.image.version=${{ steps.semver.outputs.version }}
             org.opencontainers.image.revision=${{ steps.semver.outputs.commit }}
-            org.opencontainers.image.created=${{ github.run_started_at }}
             org.opencontainers.image.base.name=debian:bookworm-slim
             org.opencontainers.image.base.digest=sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
 
@@ -188,6 +191,7 @@ jobs:
         with:
           context: .
           load: true
+          platforms: linux/amd64
           tags: |
             runner-release:test
             ${{ steps.meta.outputs.tags }}
@@ -213,42 +217,36 @@ jobs:
 
 
       # -----------------------------------------------------------------------
-      # Ensure test script executability
-      #
-      # Rationale:
-      # - file mode may not be preserved across platforms
-      # - release validation must not depend on checkout-side executable bits
-      # -----------------------------------------------------------------------
-
-      - name: Ensure CI test scripts are executable
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          for f in ci/*.sh; do
-            [ -x "$f" ] || chmod 0755 "$f"
-          done
-
-
-      # -----------------------------------------------------------------------
       # Full contract validation (CI invariant)
       #
       # Release MUST re-validate the full runner contract.
       # Publishing without passing the full test suite is forbidden.
       # -----------------------------------------------------------------------
 
-      - name: Run full contract test suite on the built release image
+      - name: Run complete base-owned test suite on the built release image
         shell: bash
         env:
           IMAGE: runner-release:test
         run: |
           set -Eeuo pipefail
-          ./ci/test-metadata-grammar.sh
-          ./ci/test-smoke.sh
-          ./ci/test-image-identity.sh
-          ./ci/test-runner-core.sh
-          ./ci/test-negative.sh
-          ./ci/test-runner-plugin.sh
+          bash ci/run-base-tests.sh
+
+      - name: Prepare release evidence directory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p release-artifacts
+
+      - name: Generate SPDX SBOM for tested image
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: runner-release:test
+          format: spdx-json
+          output-file: release-artifacts/runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
+          artifact-name: runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          syft-version: v1.46.0
 
 
       # -----------------------------------------------------------------------
@@ -269,6 +267,89 @@ jobs:
             [[ -n "${tag}" ]] || continue
             docker image push "${tag}"
           done <<< "${RELEASE_TAGS}"
+
+
+      # -----------------------------------------------------------------------
+      # Release evidence, SBOM, and keyless attestations
+      # -----------------------------------------------------------------------
+
+      - name: Resolve published and rollback digests
+        id: digests
+        shell: bash
+        env:
+          TAG: ${{ steps.semver.outputs.tag }}
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          set -Eeuo pipefail
+
+          published_reference="ghcr.io/gehorak/runner-base:${VERSION}"
+          published_digest="sha256:$(docker buildx imagetools inspect --raw "${published_reference}" | sha256sum | cut -d ' ' -f 1)"
+
+          previous_tag="$(git tag --merged HEAD --list 'v*' --sort=-version:refname | grep -vx "${TAG}" | head -n 1 || true)"
+          [[ -n "${previous_tag}" ]] || {
+            echo "ERROR: no previous SemVer tag is available for rollback evidence" >&2
+            exit 1
+          }
+
+          previous_reference="ghcr.io/gehorak/runner-base:${previous_tag#v}"
+          previous_digest="sha256:$(docker buildx imagetools inspect --raw "${previous_reference}" | sha256sum | cut -d ' ' -f 1)"
+
+          {
+            echo "published_reference=${published_reference}"
+            echo "published_digest=${published_digest}"
+            echo "previous_reference=${previous_reference}"
+            echo "previous_digest=${previous_digest}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Attest published image provenance
+        id: attest-provenance
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/gehorak/runner-base
+          subject-digest: ${{ steps.digests.outputs.published_digest }}
+          push-to-registry: true
+          create-storage-record: false
+
+      - name: Attest published image SBOM
+        id: attest-sbom
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/gehorak/runner-base
+          subject-digest: ${{ steps.digests.outputs.published_digest }}
+          sbom-path: release-artifacts/runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
+          push-to-registry: true
+          create-storage-record: false
+
+      - name: Write and validate release evidence
+        shell: bash
+        env:
+          RUNNER_RELEASE_EVIDENCE_OUTPUT: release-artifacts/runner-base-${{ steps.semver.outputs.version }}.release-evidence.json
+          RUNNER_RELEASE_SOURCE_COMMIT: ${{ steps.semver.outputs.commit }}
+          RUNNER_RELEASE_TAG: ${{ steps.semver.outputs.tag }}
+          RUNNER_RELEASE_PUBLISHED_REFERENCE: ${{ steps.digests.outputs.published_reference }}
+          RUNNER_RELEASE_PUBLISHED_DIGEST: ${{ steps.digests.outputs.published_digest }}
+          RUNNER_RELEASE_PARENT_REFERENCE: debian:bookworm-slim@sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
+          RUNNER_RELEASE_PARENT_DIGEST: sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
+          RUNNER_RELEASE_SBOM_REFERENCE: runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
+          RUNNER_RELEASE_PROVENANCE_REFERENCE: ${{ steps.attest-provenance.outputs.attestation-url }}
+          RUNNER_RELEASE_PREVIOUS_REFERENCE: ${{ steps.digests.outputs.previous_reference }}
+          RUNNER_RELEASE_PREVIOUS_DIGEST: ${{ steps.digests.outputs.previous_digest }}
+          RUNNER_RELEASE_TESTS: cli-v001-contract,test-release-evidence,test-shell-safety,test-metadata-grammar,test-base-dependencies,test-smoke,test-image-identity,test-runner-core,test-negative,test-runner-plugin
+        run: |
+          set -Eeuo pipefail
+          RUNNER_RELEASE_CANDIDATE_IMAGE_ID="$(docker image inspect runner-release:test --format '{{.Id}}')"
+          export RUNNER_RELEASE_CANDIDATE_IMAGE_ID
+          python3 ci/write-release-evidence.py
+          python3 ci/validate-release-evidence.py "${RUNNER_RELEASE_EVIDENCE_OUTPUT}"
+
+      - name: Publish release evidence assets
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          generate_release_notes: true
+          files: |
+            release-artifacts/runner-base-${{ steps.semver.outputs.version }}.release-evidence.json
+            release-artifacts/runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
+          fail_on_unmatched_files: true
 
 # -----------------------------------------------------------------------------
 # End of workflow

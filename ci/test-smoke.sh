@@ -23,7 +23,6 @@ IMAGE="${IMAGE:?IMAGE variable must be set}"
 echo "==> Smoke tests for image: ${IMAGE}"
 echo
 
-
 # -----------------------------------------------------------------------------
 # Test 1: Image starts and runner responds
 #
@@ -34,7 +33,6 @@ echo
 
 echo "==> Smoke: runner info responds"
 docker run --rm "${IMAGE}" info >/dev/null
-
 
 # -----------------------------------------------------------------------------
 # Test 2: Non-root execution
@@ -50,7 +48,6 @@ docker run --rm "${IMAGE}" info >/dev/null
 echo "==> Smoke: non-root execution (whoami)"
 docker run --rm "${IMAGE}" exec whoami | grep -qx 'runner'
 
-
 # -----------------------------------------------------------------------------
 # Test 3: HOME is explicit and writable
 #
@@ -61,7 +58,6 @@ docker run --rm "${IMAGE}" exec whoami | grep -qx 'runner'
 
 echo "==> Smoke: HOME is explicit and writable"
 docker run --rm "${IMAGE}" exec sh -c 'test "$HOME" = "/home/runner" && test -d "$HOME" && test -w "$HOME"'
-
 
 # -----------------------------------------------------------------------------
 # Test 4: Default workspace exists and is writable
@@ -74,7 +70,6 @@ docker run --rm "${IMAGE}" exec sh -c 'test "$HOME" = "/home/runner" && test -d 
 echo "==> Smoke: workspace exists and is writable"
 docker run --rm "${IMAGE}" exec sh -c 'test -d /workspace && test -w /workspace && probe=/workspace/.runner-smoke-write && : > "$probe" && rm "$probe"'
 
-
 # -----------------------------------------------------------------------------
 # Test 5: Explicit system command execution
 #
@@ -85,7 +80,6 @@ docker run --rm "${IMAGE}" exec sh -c 'test -d /workspace && test -w /workspace 
 
 echo "==> Smoke: explicit exec works"
 docker run --rm "${IMAGE}" exec bash -c 'echo exec-ok' | grep -qx 'exec-ok'
-
 
 # -----------------------------------------------------------------------------
 # Test completion

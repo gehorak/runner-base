@@ -23,7 +23,6 @@ IMAGE="${IMAGE:?IMAGE variable must be set}"
 echo "==> Runner core contract tests for image: ${IMAGE}"
 echo
 
-
 # -----------------------------------------------------------------------------
 # Core command: help
 #
@@ -34,7 +33,6 @@ echo
 
 echo "==> Core: help"
 docker run --rm "${IMAGE}" help >/dev/null
-
 
 # -----------------------------------------------------------------------------
 # Core command: about
@@ -55,7 +53,6 @@ echo "${about_output}" | grep -q '^Image identity:'
 echo "${about_output}" | grep -q '^[[:space:]]*Name:'
 echo "${about_output}" | grep -q '^[[:space:]]*Domain:'
 
-
 # -----------------------------------------------------------------------------
 # Core command: info
 #
@@ -74,7 +71,6 @@ info_output="$(docker run --rm "${IMAGE}" info)"
 echo "${info_output}" | grep -q '^Runtime contract:'
 echo "${info_output}" | grep -q '^Runtime state:'
 
-
 # -----------------------------------------------------------------------------
 # Core command: exec
 #
@@ -84,7 +80,6 @@ echo "${info_output}" | grep -q '^Runtime state:'
 
 echo "==> Core: exec"
 docker run --rm "${IMAGE}" exec true
-
 
 # -----------------------------------------------------------------------------
 # Core command: version
@@ -102,7 +97,6 @@ version_output="$(docker run --rm "${IMAGE}" version)"
 
 # Stable contract marker
 echo "${version_output}" | grep -q '^Tool versions:'
-
 
 # -----------------------------------------------------------------------------
 # Test completion

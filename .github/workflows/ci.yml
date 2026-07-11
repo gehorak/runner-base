@@ -55,6 +55,33 @@ permissions:
 
 jobs:
 
+  lint:
+    name: Lint distributed shell surface
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install pinned shfmt
+        uses: mfinelli/setup-shfmt@a25fda4c1fe115aec0f85e04126610841bc3141d # v4.0.1
+        with:
+          shfmt-version: v3.13.1
+
+      - name: Run Bash syntax and shfmt checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash ci/lint-shell.sh
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
+        with:
+          scandir: .
+          severity: warning
+          check_together: true
+          version: v0.11.0
+
   # ===========================================================================
   # Build job
   #
@@ -91,19 +118,9 @@ jobs:
           set -Eeuo pipefail
 
           docker build \
+            --platform linux/amd64 \
             --tag runner-ci:${{ github.sha }} \
             .
-
-
-      # -----------------------------------------------------------------------
-      # Validate the future CLI contract without activating runtime behavior
-      # -----------------------------------------------------------------------
-
-      - name: Validate CLI v001 contract fixtures
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python ci/validate-cli-v001-contract.py
 
 
       # ===========================================================================
@@ -118,26 +135,6 @@ jobs:
 
      
       # -----------------------------------------------------------------------
-      # Ensure test script executability
-      #
-      # Rationale:
-      # - File mode may not be preserved across platforms (e.g. Windows checkouts)
-      # - CI must be able to execute tests regardless of developer environment
-      #
-      # This step does NOT modify the committed source of truth.
-      # -----------------------------------------------------------------------
-
-      - name: Ensure CI test scripts are executable
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          for f in ci/*.sh; do
-            [ -x "$f" ] || chmod 0755 "$f"
-          done
-
-
-      # -----------------------------------------------------------------------
       # Execute test suite
       #
       # Tests are executed:
@@ -148,20 +145,14 @@ jobs:
       # No test discovery or implicit ordering is used.
       # -----------------------------------------------------------------------
 
-      - name: Execute contract test suite
+      - name: Execute base-owned test suite
         shell: bash
         env:
           IMAGE: runner-ci:${{ github.sha }}
         run: |
           set -Eeuo pipefail
 
-          ./ci/test-metadata-grammar.sh
-          ./ci/test-smoke.sh
-          ./ci/test-image-identity.sh
-          ./ci/test-runner-core.sh
-          ./ci/test-negative.sh
-          ./ci/test-runner-plugin.sh
-          # ./ci/test-domain.sh
+          bash ci/run-base-tests.sh
 
 
 # -----------------------------------------------------------------------------

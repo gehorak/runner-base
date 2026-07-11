@@ -21,7 +21,6 @@ IMAGE="${IMAGE:?IMAGE variable must be set}"
 echo "==> Image identity tests for image: ${IMAGE}"
 echo
 
-
 # -----------------------------------------------------------------------------
 # Test 1: image.env exists and is non-empty
 #
@@ -32,7 +31,6 @@ echo
 
 echo "==> Identity: /etc/runner/image.env exists and is non-empty"
 docker run --rm "${IMAGE}" exec sh -c 'test -s /etc/runner/image.env'
-
 
 # -----------------------------------------------------------------------------
 # Test 2: image.env contains required keys
@@ -46,7 +44,6 @@ echo "==> Identity: required keys present in image.env"
 docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_IMAGE=' /etc/runner/image.env"
 docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_DOMAIN=' /etc/runner/image.env"
 docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_ROLE=' /etc/runner/image.env"
-
 
 # -----------------------------------------------------------------------------
 # Test 3: identity is exposed via 'about'
@@ -68,8 +65,6 @@ about_output="$(docker run --rm "${IMAGE}" about)"
 echo "${about_output}" | grep -q '^Image identity:'
 echo "${about_output}" | grep -q '^[[:space:]]*Name:'
 echo "${about_output}" | grep -q '^[[:space:]]*Domain:'
-
-
 
 # -----------------------------------------------------------------------------
 # Test completion

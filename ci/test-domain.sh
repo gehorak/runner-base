@@ -23,7 +23,6 @@ IMAGE="${IMAGE:?IMAGE variable must be set}"
 echo "==> Domain tests for image: ${IMAGE}"
 echo
 
-
 # -----------------------------------------------------------------------------
 # Domain-specific tests
 #
@@ -43,7 +42,6 @@ echo
 
 echo "==> Domain tests: no domain-specific tests defined"
 echo "==> This is expected for images without domain tooling"
-
 
 # -----------------------------------------------------------------------------
 # Test completion

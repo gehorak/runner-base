@@ -15,6 +15,25 @@
 
 ---
 
+## [Unreleased] - v0.2.6 stabilization target
+
+### Added
+- Public security, usage, derived-image, troubleshooting, and release/rollback documentation
+- Shared base-owned test sequence, shell-safety test, dependency inventory test, and CI shell linting
+- Versioned CLI v001 target schemas, fixtures, and offline contract validation without runtime activation
+- Machine-readable release-evidence schema, SBOM, and keyless-attestation workflow design
+
+### Changed
+- Declared `linux/amd64` as the only supported platform
+- Removed duplicate `wget` from the base dependency inventory
+- Aligned Make, CI, and release validation around the same base-owned tests
+
+### Notes
+- This is an unreleased stabilization target. It preserves the current legacy v0.2.x command surface.
+- `v0.3.0` dispatcher implementation remains a separate future authorization.
+
+---
+
 ## [0.2.1] - Local candidate
 
 ### Added

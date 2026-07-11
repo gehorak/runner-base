@@ -1,9 +1,9 @@
-# ARCHITECTURE of Runner Platform (v0.2.3)
+# ARCHITECTURE of Runner Platform (legacy v0.2.x)
 
 ## Purpose
 
 This document describes the **architectural principles, structure,
-and invariants** of the runner platform as of version **v0.2.3**.
+and invariants** of the current legacy **v0.2.x** runner platform.
 
 It explains:
 
@@ -35,7 +35,7 @@ The platform consists of:
 * a **strict execution model**
 
 All domain-specific images (terraform, ansible, kubectl, …)
-extend the base image without modifying the platform architecture.
+extend the base image without modifying the platform architecture. The normative authoring rules are in `docs/DERIVED-IMAGES.md`.
 
 ---
 
@@ -307,9 +307,9 @@ Undocumented architectural changes are considered defects.
 
 ---
 
-## Architectural invariants (v0.2.3)
+## Architectural invariants (legacy v0.2.x)
 
-The following invariants define the runner platform in v0.2.3:
+The following invariants define the current legacy v0.2.x runner platform:
 
 * single explicit entrypoint
 * layered responsibility separation
