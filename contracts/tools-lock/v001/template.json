@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "tools": [
+    {
+      "name": "example-tool",
+      "version": "0.0.0",
+      "source": "https://example.invalid/example-tool-0.0.0-linux-amd64.tar.gz",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

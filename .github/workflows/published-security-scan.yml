@@ -1,0 +1,43 @@
+name: Scan latest published release
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  scan:
+    name: Scan immutable published digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Resolve the latest released immutable SemVer digest
+        id: target
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)"
+          [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "ERROR: latest GitHub Release tag is not strict SemVer: ${tag}" >&2; exit 1; }
+          reference="ghcr.io/gehorak/runner-base:${tag#v}"
+          digest="sha256:$(docker buildx imagetools inspect --raw "${reference}" | sha256sum | cut -d ' ' -f 1)"
+          printf 'reference=%s\ndigest=%s\n' "${reference}" "${digest}" > scan-target.txt
+          cat scan-target.txt >> "${GITHUB_STEP_SUMMARY}"
+          {
+            echo "reference=${reference}"
+            echo "digest=${digest}"
+          } >> "${GITHUB_OUTPUT}"
+      - name: Scan the exact published digest
+        shell: bash
+        env:
+          REFERENCE: ${{ steps.target.outputs.reference }}
+          DIGEST: ${{ steps.target.outputs.digest }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm aquasec/trivy@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 \
+            image "${REFERENCE}@${DIGEST}" --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1

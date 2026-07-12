@@ -72,6 +72,30 @@ Every installed package has a base-owned reason. Domain-specific tools belong in
 
 `wget` is removed as a duplicate HTTP client. `jq` is not a base dependency and is not required by the CLI contract.
 
+## Derived compatibility maintenance
+
+The shared-utility and writable-path contract is defined in `docs/CONTRACT.md`.
+Maintain it as one public platform surface: package removal, path reassignment,
+or a change to child-PATH behavior requires a compatibility review. Derived
+repositories own their tool caches, configuration, custom CA lifecycle, domain
+tests, and immutable `tools.lock` evidence.
+
+The reusable derived-conformance workflow is consumed only by a full
+`runner-base` commit SHA. Its inputs record an immutable parent SemVer/digest,
+the expected Runner contract version, the derived lock, and an explicit domain
+test. A base contract update must keep its conformance bundle backward-readable
+or provide an explicit new version; derived repositories update that pin during
+their normal parent-adoption review.
+
+## Published-image vulnerability monitoring
+
+`.github/workflows/published-security-scan.yml` runs weekly and on manual
+dispatch. It resolves the latest GitHub Release's strict SemVer tag, resolves
+that registry tag to an immutable digest, records both values in the job
+summary, and scans that exact digest with the release-pinned Trivy image. The
+job fails on fixable `HIGH` or `CRITICAL` findings. A failed scan is a triage
+signal; it does not mutate an existing release or alias.
+
 ---
 
 ## Release tag discipline

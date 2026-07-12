@@ -28,12 +28,51 @@ Use canonical tool names in `RUNNER_TOOL_NAMES`, lexical ordering, explicit exec
 
 The runtime registry deliberately validates only the canonical name, version,
 explicit executable binding, and aliases. A derived image records artifact
-source, resolved version, and checksum in a release-owned `tools.lock` (or
-equivalent evidence) and verifies that evidence during its own build or release
-process. Runner base does not fetch or validate remote artifacts at runtime.
+source, resolved version, and checksum in its release-owned
+`contracts/tools-lock/v001/tools.lock.json`. The file must conform to
+`runner-base/contracts/tools-lock/v001/schema.json`, use lexical tool ordering,
+and contain exactly one HTTPS source and SHA256 for every declared Runner tool.
+The derived build or release process must verify every download against that
+lock before installation. Runner base does not fetch or validate remote
+artifacts at runtime.
+
+Copy the structure in `contracts/tools-lock/v001/template.json`; do not restore
+legacy `TOOL_<NAME>_SHA256` fields in `image.manifest`. The lock is release
+evidence, while `RUNNER_TOOL_*` metadata remains the runtime registry.
+
+## Pinned derived conformance
+
+Every stable derived release must run the versioned base conformance interface
+and record both its immutable parent and the immutable conformance commit. The
+low-maintenance distribution mechanism is the reusable workflow:
+
+```yaml
+jobs:
+  runner-base:
+    uses: gehorak/runner-base/.github/workflows/derived-conformance.yml@<40-character-runner-base-commit>
+    with:
+      image: runner-terraform:conformance
+      build_context: .
+      dockerfile: Dockerfile
+      base_reference: ghcr.io/gehorak/runner-base:0.3.0@sha256:<published-digest>
+      expected_contract_version: v001
+      conformance_ref: <the-same-40-character-runner-base-commit>
+      tools_lock_path: contracts/tools-lock/v001/tools.lock.json
+      domain_test_path: ci/test-domain.sh
+```
+
+The conformance bundle builds the declared image, validates the exact tool-lock
+names against `runner info --format json`, checks root ownership and runtime-user
+non-writability of all parent-owned metadata, dispatcher, and parser files, and
+then runs the derived repository's explicit domain test. The caller must pin
+both references to full commit or digest identities; branch and convenience tags
+are not valid compatibility evidence.
 
 ## Compatibility and upgrades
 
-Record the parent digest adopted by each derived release. A derived image must state which base release and digest it was tested against, then revalidate its domain contract whenever it adopts a new parent digest.
+Record the parent SemVer, digest, contract version, conformance commit, and
+tools-lock digest adopted by each derived release. A derived image must state
+which base release and digest it was tested against, then revalidate its domain
+contract whenever it adopts a new parent digest.
 
 The v001 target is documented separately in `docs/CLI-V001.md`. Do not rely on it in a derived image until the corresponding public base release exists.

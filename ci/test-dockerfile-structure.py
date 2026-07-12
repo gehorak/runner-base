@@ -23,6 +23,8 @@ def main() -> int:
         "Dockerfile must pin the Debian base image by digest",
     )
     require("SHELL [\"/bin/bash\", \"-Eeuo\", \"pipefail\", \"-c\"]" in dockerfile, "Dockerfile must use fail-fast Bash")
+    require("ENV DEBIAN_FRONTEND=" not in dockerfile, "DEBIAN_FRONTEND must not persist in the runtime image")
+    require("RUN DEBIAN_FRONTEND=noninteractive apt-get update" in dockerfile, "APT installation must set DEBIAN_FRONTEND only for the build step")
     require("COPY image.manifest /tmp/image.manifest" in dockerfile, "Dockerfile must materialize the declared manifest")
     require("USER runner" in dockerfile, "Dockerfile must end with the declared non-root user")
     require(re.search(r"^ADD\\s", dockerfile, re.MULTILINE) is None, "Dockerfile must not use ADD")

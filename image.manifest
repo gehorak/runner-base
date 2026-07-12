@@ -98,24 +98,13 @@ RUNTIME_WORKDIR=/workspace
 # Tooling (domain-specific)
 #
 # Rules:
-# - Tool versions are immutable for a given image tag
-# - SHA256 checksums are mandatory
-# - No tool may be installed without a verified checksum
+# - Tool versions are immutable for a given image tag.
+# - Runtime metadata declares only the tool name, version, executable, and
+#   aliases through RUNNER_TOOL_* keys.
+# - Download source and SHA256 integrity evidence belong exclusively in the
+#   derived release's contracts/tools-lock/v001 JSON document.
 #
-# Base images may leave this section empty.
-# -----------------------------------------------------------------------------
-# TOOL_<NAME>_VERSION=0.0.0
-# TOOL_<NAME>_SHA256=<REAL_SHA256_VALUE>
-
-
-# -----------------------------------------------------------------------------
-# Auxiliary system tools
-#
-# These tools are exposed only via explicit `exec` usage.
-# They MUST NOT introduce implicit runner behavior.
-# -----------------------------------------------------------------------------
-# TOOL_<NAME>_VERSION=0.0.0
-# TOOL_<NAME>_SHA256=<REAL_SHA256_VALUE>
+# The base image intentionally has no RUNNER_TOOL_* declarations.
 
 
 # -----------------------------------------------------------------------------

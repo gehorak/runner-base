@@ -122,7 +122,12 @@ Passing this fixture gate proves only contract-artifact consistency. Runtime imp
 
 `test-release-evidence.sh` writes a synthetic, deterministic evidence record and verifies that both a valid record and an invalid mutable image reference are handled correctly. `test-release-identity.sh` verifies that a release manifest binds both runtime image version and revision to the release tag and commit. Neither test publishes an image or creates an attestation.
 
-`test-dockerfile-structure.py` rejects unpinned base-image references, permissive Dockerfile primitives, runtime build arguments, and a root final user before an image is built.
+`test-dockerfile-structure.py` rejects unpinned base-image references, permissive Dockerfile primitives, runtime build arguments, a persistent build-only `DEBIAN_FRONTEND`, and a root final user before an image is built.
+
+`test-tools-lock.py` validates the dependency-free `tools.lock` v001 grammar and
+negative integrity cases. `test-release-publication-state.py` proves that an
+absent immutable release may be published, an exact tested candidate may resume,
+and a mismatching immutable image fails closed.
 
 The shared `run-base-tests.sh` sequence is the only base release invariant. It is used by Make, CI, and the release workflow. `test-domain.sh` remains a template for derived repositories and is not part of base test success.
 
@@ -226,6 +231,7 @@ and are as important as positive tests.
 
 * `/etc/runner/image.env` exists and is non-empty
 * required identity keys are present
+* parent-owned metadata, dispatcher, and parser files are root-owned and not writable by the runtime user
 * identity is exposed via `runner info --format text|json`
 
 Exact formatting is intentionally not validated.
@@ -235,6 +241,14 @@ Exact formatting is intentionally not validated.
 The documented read-only, no-capability, `no-new-privileges`, non-root runtime
 envelope must still execute `runner info --format json`. This protects the
 runtime hardening guidance from drifting away from the actual image.
+
+### Derived Conformance Tests (`test-derived-conformance.sh`)
+
+The synthetic derived fixture consumes the same `tools.lock` v001 contract and
+the distributable `derived-conformance.sh` interface used by derived
+repositories. It verifies exact declared-tool/lock-name alignment, immutable
+parent files, and an explicit domain test. A negative fixture deliberately
+changes one parent file to runtime-user ownership and must fail conformance.
 
 ---
 

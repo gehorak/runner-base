@@ -21,15 +21,20 @@
 - Canonical `runner --help`, `runner --version`, `runner info`, `runner tool`, `runner exec --`, and `runner shell` dispatcher surface
 - Declarative base-owned tool metadata materialization and a synthetic derived compatibility fixture
 - Runtime JSON metadata, stable Runner-native error identifiers, and v0.3 compatibility tests
+- Versioned `tools.lock` evidence and a pinned derived-conformance interface for future derived repositories
+- Scheduled digest-pinned scanning of the latest published immutable release
 
 ### Changed
 - Release-evidence contract now records CLI v001 compatibility-bridge validation
 - Runner startup uses privileged Bash mode, runtime metadata permits workdir overrides, and child processes retain their derived-image PATH.
 - Derived tools use the declarative registry and explicit executable bindings; runtime plugin-directory discovery is not part of the public model.
+- The derived runtime contract now names shared utilities and workspace, PATH, cache, configuration, temporary-file, and CA responsibilities.
 
 ### Fixed
 - JSON contract errors are selected for both `info --format json` and `tool --format json` before metadata validation.
 - Release candidates validate actual runtime image identity, serialize release runs, pin the vulnerability scanner, and record the canonical test list.
+- Parent-owned metadata, dispatcher, and parser files are verified root-owned and non-writable by the runtime user, including a negative derived fixture.
+- Release finalization can resume only when an existing immutable SemVer reference matches the tested candidate configuration digest; convenience aliases are delayed until evidence publication.
 
 ### Notes
 - This is a local release candidate and has not been pushed, tagged, published, or released.

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "tools": [
+    {
+      "name": "sample-tool",
+      "version": "1.0.0",
+      "source": "https://example.invalid/sample-tool-1.0.0-linux-amd64",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "name": "unavailable-tool",
+      "version": "1.0.0",
+      "source": "https://example.invalid/unavailable-tool-1.0.0-linux-amd64",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ]
+}

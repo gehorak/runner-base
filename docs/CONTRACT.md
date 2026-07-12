@@ -236,6 +236,29 @@ All runner images MUST:
 * expose the declared runtime workdir as the default working directory
 * ensure the declared runtime workdir exists and is writable for the runtime user
 
+### Shared utilities and writable paths
+
+The following commands are public shared utilities for derived images and remain
+available through explicit `runner exec --`: `bash`, `coreutils`, `curl`, `git`,
+`openssh-client`, `gnupg`, `tar`, `gzip`, `zip`, `unzip`, `grep`, `sed`, and
+`mawk`. Removing one of these utilities is a platform-contract change and
+requires the corresponding SemVer decision and documentation update. Package
+managers and other operating-system implementation details are not public
+utilities.
+
+`/workspace` is the only base-owned default working location; callers may select
+another writable workdir. The base guarantees the declared `HOME` and does not
+reserve cache or configuration locations for domain tools. A derived image owns
+and documents its tool-specific cache and configuration paths, including any
+required writable mounts. Explicit child commands retain the caller or
+derived-image `PATH`; Runner-owned lookup has a separate protected internal
+path. `/tmp` is temporary only and may be a runtime-provided tmpfs in the
+hardened envelope, so no persistent state may depend on it.
+
+The base supplies the system CA trust store. A derived image that needs extra CA
+certificates owns their installation and lifecycle; credentials and private CA
+material remain runtime-only and must not enter metadata, locks, or evidence.
+
 ---
 
 ### Shell access

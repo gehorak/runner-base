@@ -1,0 +1,70 @@
+name: Derived conformance
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: Local image name used for the derived build and tests.
+        required: true
+        type: string
+      build_context:
+        description: Derived Docker build context relative to the caller repository root.
+        required: true
+        type: string
+      dockerfile:
+        description: Derived Dockerfile relative to the caller repository root.
+        required: true
+        type: string
+      base_reference:
+        description: Immutable released runner-base SemVer and digest reference adopted by the derived image.
+        required: true
+        type: string
+      expected_contract_version:
+        description: Runner conformance version expected by the derived image.
+        required: true
+        type: string
+      conformance_ref:
+        description: Full runner-base commit SHA that supplies the conformance bundle.
+        required: true
+        type: string
+      tools_lock_path:
+        description: Derived tools.lock JSON path relative to the caller repository root.
+        required: true
+        type: string
+      domain_test_path:
+        description: Derived explicit shell test path relative to the caller repository root.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout derived source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Checkout pinned Runner conformance bundle
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: gehorak/runner-base
+          ref: ${{ inputs.conformance_ref }}
+          path: runner-base-contract
+      - name: Build derived image from the declared immutable parent
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker build --build-arg "BASE_IMAGE=${{ inputs.base_reference }}" --file "${{ inputs.dockerfile }}" --tag "${{ inputs.image }}" "${{ inputs.build_context }}"
+      - name: Run pinned Runner base conformance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "${{ inputs.conformance_ref }}" =~ ^[0-9a-f]{40}$ ]] || { echo 'ERROR: conformance_ref must be a full immutable commit SHA' >&2; exit 1; }
+          [[ "$(git -C runner-base-contract rev-parse HEAD)" == "${{ inputs.conformance_ref }}" ]] || { echo 'ERROR: checked-out conformance bundle does not match the requested commit' >&2; exit 1; }
+          bash runner-base-contract/ci/derived-conformance.sh \
+            --image "${{ inputs.image }}" \
+            --base-reference "${{ inputs.base_reference }}" \
+            --contract-version "${{ inputs.expected_contract_version }}" \
+            --tools-lock "${{ inputs.tools_lock_path }}" \
+            --domain-test "${{ inputs.domain_test_path }}"

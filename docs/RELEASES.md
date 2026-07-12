@@ -16,10 +16,26 @@ The Debian parent image is pinned by digest. APT package versions are not indivi
 2. The workflow writes an isolated build-context manifest whose `RUNNER_VERSION` and `RUNNER_IMAGE_VERSION` equal the tag and whose `RUNNER_IMAGE_REVISION` equals the tagged commit.
 3. The workflow builds one `linux/amd64` candidate image and runs the complete base-owned test sequence.
 4. It generates an SPDX JSON SBOM for that tested candidate.
-5. It publishes the same tested local image under fixed SemVer, minor-line, and convenience `latest` tags.
-6. It resolves the published digest, records the immediately preceding lower strict-SemVer rollback digest, generates keyless provenance and SBOM attestations, and publishes the evidence and SBOM as GitHub Release assets.
+5. It publishes only the fixed SemVer tag, then resolves its immutable digest and records the immediately preceding lower strict-SemVer rollback digest.
+6. It generates keyless provenance and SBOM attestations and publishes the evidence and SBOM as GitHub Release assets.
+7. Only after the immutable evidence succeeds, it updates the minor-line and convenience `latest` aliases to the recorded digest.
 
-The GitHub Release and its public evidence assets are created only after the rollback digest, SBOM, provenance, and machine-readable evidence are available. A registry publication has to precede digest-bound attestation; if a later evidence or attestation step fails, maintainers must investigate and, when the image cannot be completed, mark the published version as yanked rather than silently retrying or replacing its tag.
+The GitHub Release and its public evidence assets are created only after the rollback digest, SBOM, provenance, and machine-readable evidence are available. A registry publication has to precede digest-bound attestation. If a later step fails, a re-run may resume only when the existing immutable SemVer image's registry configuration digest exactly matches the newly tested candidate configuration digest. A mismatch fails closed: do not replace the tag; investigate and, if the release cannot be completed, mark it as yanked.
+
+## Partial publication and recovery
+
+The immutable SemVer tag is the recovery checkpoint. A maintainer may re-run the
+same tag workflow after a registry, attestation, evidence, or GitHub Release
+outage only when the workflow's candidate digest matches the already published
+immutable image. The recovery run repeats required tests, scan, SBOM, and
+evidence validation before completing unfinished attestation or release steps.
+
+If the immutable image resolves to a different candidate digest, stop. Never
+overwrite a release tag, force a minor alias as a workaround, or create evidence
+for unverified bits. Mark the release as yanked if it cannot be completed, then
+publish a new SemVer tag after the defect or incident is understood. Aliases are
+updated only after evidence succeeds; an alias-only failure may be safely retried
+against the already evidenced immutable digest.
 
 ## Immutable references
 

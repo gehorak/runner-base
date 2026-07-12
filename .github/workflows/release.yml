@@ -208,16 +208,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Refuse an existing immutable release tag
+      - name: Inspect immutable release recovery state
+        id: existing-release
         shell: bash
         env:
           VERSION: ${{ steps.semver.outputs.version }}
         run: |
           set -Eeuo pipefail
-          if docker manifest inspect "ghcr.io/gehorak/runner-base:${VERSION}" >/dev/null 2>&1; then
-            echo "ERROR: immutable release tag ${VERSION} is already published" >&2
-            exit 1
+          reference="ghcr.io/gehorak/runner-base:${VERSION}"
+          existing_config_digest="absent"
+          if docker manifest inspect "${reference}" >/dev/null 2>&1; then
+            raw_manifest="$(docker buildx imagetools inspect --raw "${reference}")"
+            existing_config_digest="$(printf '%s' "${raw_manifest}" | python3 -c 'import json, sys; print(json.load(sys.stdin)["config"]["digest"])')"
           fi
+          echo "config_digest=${existing_config_digest}" >> "${GITHUB_OUTPUT}"
 
 
       # -----------------------------------------------------------------------
@@ -304,23 +308,30 @@ jobs:
 
 
       # -----------------------------------------------------------------------
-      # Publish tested image to GHCR
+      # Publish or resume the immutable SemVer image
       #
       # Executed only after successful build and validation.
       # The pushed tags all reference the same locally tested image.
       # -----------------------------------------------------------------------
 
-      - name: Publish tested image to GHCR
+      - name: Publish or resume immutable tested image
+        id: publication
         shell: bash
         env:
-          RELEASE_TAGS: ${{ steps.meta.outputs.tags }}
+          VERSION: ${{ steps.semver.outputs.version }}
+          EXISTING_CONFIG_DIGEST: ${{ steps.existing-release.outputs.config_digest }}
         run: |
           set -Eeuo pipefail
-
-          while IFS= read -r tag; do
-            [[ -n "${tag}" ]] || continue
-            docker image push "${tag}"
-          done <<< "${RELEASE_TAGS}"
+          candidate_config_digest="$(docker image inspect runner-release:test --format '{{.Id}}')"
+          mode="$(python3 ci/release-publication-state.py \
+            --existing-config-digest "${EXISTING_CONFIG_DIGEST}" \
+            --candidate-config-digest "${candidate_config_digest}")"
+          immutable_reference="ghcr.io/gehorak/runner-base:${VERSION}"
+          if [[ "${mode}" == publish ]]; then
+            docker image tag runner-release:test "${immutable_reference}"
+            docker image push "${immutable_reference}"
+          fi
+          echo "mode=${mode}" >> "${GITHUB_OUTPUT}"
 
 
       # -----------------------------------------------------------------------
@@ -360,14 +371,6 @@ jobs:
 
           previous_reference="ghcr.io/gehorak/runner-base:${previous_tag#v}"
           previous_digest="sha256:$(docker buildx imagetools inspect --raw "${previous_reference}" | sha256sum | cut -d ' ' -f 1)"
-
-          for published_tag in "${VERSION}" "${VERSION_MM}" latest; do
-            observed_digest="sha256:$(docker buildx imagetools inspect --raw "ghcr.io/gehorak/runner-base:${published_tag}" | sha256sum | cut -d ' ' -f 1)"
-            [[ "${observed_digest}" == "${published_digest}" ]] || {
-              echo "ERROR: published tag ${published_tag} does not match tested candidate digest" >&2
-              exit 1
-            }
-          done
 
           {
             echo "published_reference=${published_reference}"
@@ -427,6 +430,24 @@ jobs:
             release-artifacts/runner-base-${{ steps.semver.outputs.version }}.release-evidence.json
             release-artifacts/runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
           fail_on_unmatched_files: true
+
+      - name: Publish convenience aliases after immutable evidence
+        shell: bash
+        env:
+          VERSION_MM: ${{ steps.semver.outputs.version_mm }}
+          PUBLISHED_DIGEST: ${{ steps.digests.outputs.published_digest }}
+        run: |
+          set -Eeuo pipefail
+          for alias in "${VERSION_MM}" latest; do
+            reference="ghcr.io/gehorak/runner-base:${alias}"
+            docker image tag runner-release:test "${reference}"
+            docker image push "${reference}"
+            observed_digest="sha256:$(docker buildx imagetools inspect --raw "${reference}" | sha256sum | cut -d ' ' -f 1)"
+            [[ "${observed_digest}" == "${PUBLISHED_DIGEST}" ]] || {
+              echo "ERROR: convenience alias ${alias} does not match the immutable published digest" >&2
+              exit 1
+            }
+          done
 
 # -----------------------------------------------------------------------------
 # End of workflow

@@ -36,7 +36,6 @@ LABEL org.opencontainers.image.base.name="debian:bookworm-slim" \
 # Deterministic build environment
 # =============================================================================
 
-ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV TZ=Etc/UTC
@@ -55,7 +54,7 @@ SHELL ["/bin/bash", "-Eeuo", "pipefail", "-c"]
 # NOT part of the public image contract.
 # =============================================================================
 
-RUN apt-get update \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates \
       bash \

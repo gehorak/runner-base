@@ -47,7 +47,25 @@ docker run --rm "${IMAGE}" exec -- sh -c "grep -q '^RUNNER_ROLE=' /etc/runner/im
 docker run --rm "${IMAGE}" exec -- sh -c "grep -q '^RUNNER_IMAGE_REVISION=' /etc/runner/image.env"
 
 # -----------------------------------------------------------------------------
-# Test 3: identity is exposed via canonical info
+# Test 3: platform-owned files stay root-owned and non-writable at runtime
+# -----------------------------------------------------------------------------
+
+echo "==> Identity: platform-owned files are immutable to the runtime user"
+docker run --rm --user 0 --entrypoint /bin/sh "${IMAGE}" -c '
+  set -eu
+  for file in /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env /usr/local/bin/runner /usr/local/lib/runner/metadata.sh; do
+    set -- $(stat -c "%u %g %a" "$file")
+    test "$1" = 0
+    test "$2" = 0
+    group_digit=$(( ($3 / 10) % 10 ))
+    other_digit=$(( $3 % 10 ))
+    test $(( group_digit & 2 )) -eq 0
+    test $(( other_digit & 2 )) -eq 0
+  done
+'
+
+# -----------------------------------------------------------------------------
+# Test 4: identity is exposed via canonical info
 #
 # Verifies:
 # - runner 'about' command exposes image identity

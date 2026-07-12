@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://runner.invalid/contracts/tools-lock/v001/schema.json",
+  "title": "Runner derived tool integrity lock v001",
+  "type": "object",
+  "required": ["schema_version", "tools"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "source", "sha256"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "version": {"type": "string", "minLength": 1},
+          "source": {"type": "string", "pattern": "^https://"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

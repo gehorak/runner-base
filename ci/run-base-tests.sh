@@ -10,6 +10,11 @@ TEST_SCRIPTS=(
   ci/test-release-evidence.sh
   ci/test-release-identity.sh
   ci/test-release-candidate-identity.py
+  ci/test-release-publication-state.py
+  ci/test-release-workflow-recovery.py
+  ci/test-published-security-scan.py
+  ci/test-derived-conformance-workflow.py
+  ci/test-tools-lock.py
   ci/test-parent-reference.py
   ci/test-dockerfile-structure.py
   ci/test-shell-safety.sh
@@ -17,6 +22,7 @@ TEST_SCRIPTS=(
   ci/test-base-dependencies.sh
   ci/test-smoke.sh
   ci/test-image-identity.sh
+  ci/test-derived-conformance.sh
   ci/test-runner-core.sh
   ci/test-negative.sh
   ci/test-hardened-runtime.sh

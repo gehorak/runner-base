@@ -38,6 +38,13 @@ docker run --rm \
   "$RUNNER_IMAGE" exec -- sh -c 'id && pwd'
 ```
 
+`/workspace` and the declared `HOME` are the base writable locations. A derived
+image must explicitly document every tool cache, configuration path, temporary
+directory, and custom CA requirement that needs a writable mount or runtime
+injection. Do not assume cache persistence under `/tmp`; hardened execution may
+mount it as an ephemeral tmpfs. The child PATH belongs to the caller or derived
+image, while Runner protects its own command lookup separately.
+
 For CI, set the image reference once and pass it only to reviewed jobs. Use the same immutable reference for every job that requires compatible base behavior.
 
 ## Interactive shell
