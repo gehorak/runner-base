@@ -1,11 +1,36 @@
 #!/usr/bin/env bash
 
+# =============================================================================
+# runner — v0.3.0 compatibility-bridge dispatcher
+#
+# PURPOSE
+# -------
+# Single public entrypoint for every Runner image. It owns canonical CLI
+# parsing, metadata discovery, and transparent tool/program execution.
+#
+# DESIGN PRINCIPLES
+# -----------------
+# - Canonical commands take precedence over bridge aliases.
+# - Derived images declare tools; directory discovery never creates commands.
+# - Legacy syntax normalizes into one canonical implementation path.
+# - Metadata is validated data, never evaluated shell input.
+# - Child argument boundaries, stdout, stderr, signals, and exit codes survive.
+# =============================================================================
+
 set -Eeuo pipefail
+
+# =============================================================================
+# Fixed platform locations (CONTRACT)
+# =============================================================================
 
 readonly METADATA_LIB="/usr/local/lib/runner/metadata.sh"
 readonly IMAGE_ENV="/etc/runner/image.env"
 readonly RUNTIME_ENV="/etc/runner/runtime.env"
 readonly TOOLS_ENV="/etc/runner/tools.env"
+
+# =============================================================================
+# Runner-native diagnostics and JSON helpers
+# =============================================================================
 
 runner_error() {
   local identifier="$1"
@@ -24,6 +49,13 @@ runner_deprecation() {
 runner_json_string() {
   printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' -e 's/\r/\\r/g' -e 's/\n/\\n/g'
 }
+
+# =============================================================================
+# Structured tool serialization
+#
+# Tool identity, version, aliases, and executable binding originate only from
+# validated RUNNER_TOOL_* metadata. JSON remains the normative machine surface.
+# =============================================================================
 
 runner_json_tool() {
   local name="$1"
@@ -68,6 +100,10 @@ runner_json_tools() {
   printf ']'
 }
 
+# =============================================================================
+# Canonical metadata commands
+# =============================================================================
+
 runner_help() {
   cat <<'EOF'
 Usage:
@@ -90,10 +126,14 @@ Migration:
 EOF
 }
 
+# runner --version describes Runner itself. Derived image version belongs in
+# runner info and cannot override this canonical value.
 runner_version() {
   printf 'runner %s (contract %s)\n' "$RUNNER_VERSION" "$RUNNER_CONTRACT_VERSION"
 }
 
+# Text and JSON both render the same validated metadata model; no separate
+# human-output data source is maintained.
 runner_info_json() {
   printf '{"schema_version":1,"runner":{"name":"runner","version":"%s","contract_version":"%s"},' \
     "$(runner_json_string "$RUNNER_VERSION")" \
@@ -137,6 +177,8 @@ runner_info_text() {
   printf '\n'
 }
 
+# Parse only the two frozen structured formats. The caller maps invalid syntax
+# to the stable Runner usage/format exit-code contract.
 runner_parse_format() {
   local default="$1"
   shift
@@ -147,7 +189,7 @@ runner_parse_format() {
   [[ $# -eq 2 && "$1" == "--format" ]] || return 1
   RUNNER_FORMAT_INPUT="$2"
   case "$2" in
-    text|json)
+    text | json)
       RUNNER_REQUESTED_FORMAT="$2"
       ;;
     *)
@@ -184,6 +226,14 @@ runner_tool_list() {
   done
 }
 
+# =============================================================================
+# Tool lookup and transparent execution
+#
+# Tool lookup accepts a canonical identity or an explicit bridge alias. It never
+# derives an executable from the requested command name and never falls back to
+# host/system command execution.
+# =============================================================================
+
 runner_resolve_tool() {
   local requested="$1"
   local name=""
@@ -209,6 +259,9 @@ runner_resolve_tool() {
   return 1
 }
 
+# The alias warning is emitted here only for canonical "runner tool <alias>".
+# Direct legacy commands resolve their alias before reaching this function so
+# every legacy invocation produces exactly one deprecation warning.
 runner_tool_exec() {
   local requested="${1:-}"
   local canonical=""
@@ -241,6 +294,10 @@ runner_tool() {
   runner_tool_exec "$@"
 }
 
+# =============================================================================
+# Program execution and interactive shell
+# =============================================================================
+
 runner_exec() {
   [[ "${1:-}" == "--" ]] || runner_error RUNNER_E_USAGE "Canonical exec requires '--' followed by a program." "Use 'runner exec -- <program> [arguments...]'." 2
   shift
@@ -248,11 +305,19 @@ runner_exec() {
   exec "$@"
 }
 
+# shell remains intentionally interactive-only. Automation must use exec --.
 runner_shell() {
   [[ $# -eq 0 ]] || runner_error RUNNER_E_USAGE "shell accepts no arguments" "Use runner shell interactively or runner exec -- for a program." 2
   [[ -t 0 && -t 1 ]] || runner_error RUNNER_E_SHELL_TTY "shell requires an interactive terminal" "Use docker run -it ... shell." 2
   exec "$RUNTIME_SHELL"
 }
+
+# =============================================================================
+# Runtime contract loading (READ-ONLY)
+#
+# The parser library is a fixed trusted platform file. Materialized metadata is
+# parsed and validated as literal data before any Runner command is dispatched.
+# =============================================================================
 
 [[ -f "$IMAGE_ENV" && -f "$RUNTIME_ENV" && -f "$TOOLS_ENV" && -f "$METADATA_LIB" ]] || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 
@@ -265,6 +330,13 @@ runner_metadata_export_file "$RUNTIME_ENV" >/dev/null 2>&1 || runner_error RUNNE
 runner_metadata_export_file "$TOOLS_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 
 [[ "$(id -u)" != "0" ]] || runner_error RUNNER_E_ROOT "runner must not run as root" "Run the image with its declared non-root user." 2
+
+# =============================================================================
+# Main dispatch (DETERMINISTIC)
+#
+# Dispatch priority is canonical Runner surface, frozen bridge aliases,
+# canonical tool lookup, deprecated direct tool lookup, then stable not-found.
+# =============================================================================
 
 command="${1:---help}"
 shift || true

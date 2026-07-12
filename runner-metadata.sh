@@ -1,4 +1,18 @@
 #!/usr/bin/env bash
+
+# =============================================================================
+# runner-metadata — strict literal metadata parser and v0.3 materializer
+#
+# PURPOSE
+# -------
+# Validate Runner metadata as KEY=VALUE data and materialize a derived image's
+# image, runtime, and declarative tool registry contracts under /etc/runner.
+#
+# SECURITY BOUNDARY
+# -----------------
+# This file is trusted platform code. It may be sourced by Runner and Docker
+# build steps; the metadata files it parses are never sourced or evaluated.
+# =============================================================================
 # Shared strict parser for runner metadata files.
 
 runner_metadata_error() {
@@ -130,6 +144,13 @@ runner_metadata_export_file() {
   runner_metadata_parse_file "$1" runner_metadata_export_pair
 }
 
+# =============================================================================
+# v0.3 runtime contract validation
+#
+# These helpers retain parsed values in associative maps so validation can check
+# cross-field registry invariants without evaluating metadata as shell code.
+# =============================================================================
+
 runner_metadata_contract_error() {
   echo "ERROR: metadata contract violation: $1" >&2
   return 1
@@ -146,8 +167,12 @@ runner_metadata_collect_pair() {
 runner_metadata_load_map() {
   local file="$1"
   local target_name="$2"
+  # target is an associative-map nameref supplied by the caller.
+  # shellcheck disable=SC2178
   local -n target="$target_name"
 
+  # shellcheck disable=SC2034
+  # The callback writes parsed pairs through the dynamic nameref target.
   target=()
   RUNNER_METADATA_TARGET_MAP_NAME="$target_name"
   runner_metadata_parse_file "$file" runner_metadata_collect_pair || return 1
@@ -156,13 +181,15 @@ runner_metadata_load_map() {
 
 runner_metadata_is_reserved_tool_name() {
   case "$1" in
-    help|info|tool|exec|shell|version|about|runner)
+    help | info | tool | exec | shell | version | about | runner)
       return 0
       ;;
   esac
   return 1
 }
 
+# Tool and alias lists are comma-separated, lexical, unique, and use the same
+# canonical name grammar as the public CLI contract.
 runner_metadata_validate_name_list() {
   local list="$1"
   local label="$2"
@@ -190,12 +217,16 @@ runner_metadata_validate_name_list() {
   done
 }
 
+# Convert a canonical dashed tool name into its validated metadata key suffix.
 runner_metadata_tool_key() {
   local name="$1"
   name="${name^^}"
   printf '%s' "${name//-/_}"
 }
 
+# Validate explicit registry identity, aliases, version, and executable binding.
+# Executability itself is deliberately checked at runtime so a declared but
+# unavailable executable receives the required Runner exit code 126.
 runner_metadata_validate_tool_registry() {
   local file="$1"
   local name=""
@@ -256,6 +287,8 @@ runner_metadata_validate_tool_registry() {
   done
 }
 
+# Validate image/runtime identity plus the registry both at build time and at
+# runtime. This defensive second validation catches altered materialized files.
 runner_metadata_validate_runtime_contract() {
   local image_file="$1"
   local runtime_file="$2"
@@ -284,6 +317,9 @@ runner_metadata_validate_runtime_contract() {
   runner_metadata_validate_tool_registry "$tools_file"
 }
 
+# Materialize only read-only runtime files. Derived images may invoke this base
+# function after supplying a complete declarative manifest, but may not replace
+# the parser or dispatcher contract.
 runner_metadata_materialize_manifest() {
   local manifest="$1"
 
@@ -293,9 +329,9 @@ runner_metadata_materialize_manifest() {
     return 1
   }
   mkdir -p /etc/runner
-  grep '^RUNNER_' "$manifest" | grep -v '^RUNNER_TOOL_' > /etc/runner/image.env
-  grep '^RUNTIME_' "$manifest" > /etc/runner/runtime.env
-  { grep '^RUNNER_TOOL_' "$manifest" > /etc/runner/tools.env || [[ $? -eq 1 ]]; }
+  grep '^RUNNER_' "$manifest" | grep -v '^RUNNER_TOOL_' >/etc/runner/image.env
+  grep '^RUNTIME_' "$manifest" >/etc/runner/runtime.env
+  { grep '^RUNNER_TOOL_' "$manifest" >/etc/runner/tools.env || [[ $? -eq 1 ]]; }
   runner_metadata_validate_runtime_contract /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env || return 1
   chmod 0444 /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env
 }

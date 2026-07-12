@@ -5,6 +5,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="${IMAGE:?IMAGE must name the image under test}"
+PYTHON="${PYTHON:-python3}"
 FIXTURE_DIR="${ROOT_DIR}/ci/fixtures/v030-derived"
 FIXTURE_IMAGE="${IMAGE}-v030-fixture"
 INVALID_RUNTIME_IMAGE="${IMAGE}-v030-invalid-runtime"
@@ -35,7 +36,7 @@ docker run --rm "${IMAGE}" --help >"${TMP_DIR}/help.out"
 grep -Fx '  runner exec -- <program> [arguments...]' "${TMP_DIR}/help.out" >/dev/null
 docker run --rm "${IMAGE}" --version | grep -Fx 'runner 0.3.0 (contract v001)' >/dev/null
 docker run --rm "${IMAGE}" info --format json >"${TMP_DIR}/base-info.json"
-python - "${TMP_DIR}/base-info.json" <<'PY'
+"${PYTHON}" - "${TMP_DIR}/base-info.json" <<'PY'
 import json
 import pathlib
 import sys
@@ -51,7 +52,7 @@ PY
 
 docker build --build-arg "BASE_IMAGE=${IMAGE}" -t "${FIXTURE_IMAGE}" "${FIXTURE_DIR}"
 docker run --rm "${FIXTURE_IMAGE}" tool --format json >"${TMP_DIR}/tools.json"
-python - "${TMP_DIR}/tools.json" <<'PY'
+"${PYTHON}" - "${TMP_DIR}/tools.json" <<'PY'
 import json
 import pathlib
 import sys
