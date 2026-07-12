@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -p
 
 # =============================================================================
 # runner — v0.3.0 compatibility-bridge dispatcher
@@ -19,8 +19,10 @@
 
 set -Eeuo pipefail
 
-# Do not trust a caller-provided PATH for Runner-owned commands. The absolute
-# shebang and EUID guard below run before metadata loading or child dispatch.
+# Privileged Bash mode prevents non-interactive startup files and imported
+# functions from running before these Runner-owned guards. Preserve the caller
+# PATH separately for explicitly dispatched child processes.
+readonly RUNNER_CHILD_PATH="${PATH-}"
 readonly RUNNER_SYSTEM_PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export PATH="${RUNNER_SYSTEM_PATH}"
 
@@ -291,7 +293,7 @@ runner_tool_exec() {
   executable_var="RUNNER_TOOL_${key}_EXECUTABLE"
   executable="${!executable_var}"
   [[ -x "$executable" ]] || runner_error RUNNER_E_NOT_EXECUTABLE "Tool is registered but cannot be executed: ${canonical}" "Verify the tool path and executable permissions in the derived image." 126
-  exec "$executable" "$@"
+  PATH="${RUNNER_CHILD_PATH}" exec "$executable" "$@"
 }
 
 runner_tool() {
@@ -314,7 +316,7 @@ runner_exec() {
   [[ "${1:-}" == "--" ]] || runner_error RUNNER_E_USAGE "Canonical exec requires '--' followed by a program." "Use 'runner exec -- <program> [arguments...]'." 2
   shift
   [[ $# -gt 0 ]] || runner_error RUNNER_E_USAGE "Canonical exec requires '--' followed by a program." "Use 'runner exec -- <program> [arguments...]'." 2
-  exec "$@"
+  PATH="${RUNNER_CHILD_PATH}" exec "$@"
 }
 
 # shell remains intentionally interactive-only. Automation must use exec --.
@@ -332,7 +334,7 @@ runner_validate_runtime_environment() {
   [[ "$(/usr/bin/id -g)" == "${RUNTIME_USER_GID}" ]] || return 1
   [[ "$(/usr/bin/id -un)" == "${RUNTIME_USER_NAME}" ]] || return 1
   [[ "${HOME}" == "${RUNTIME_USER_HOME}" ]] || return 1
-  [[ "${PWD}" == "${RUNTIME_WORKDIR}" ]] || return 1
+  [[ -d "${RUNTIME_WORKDIR}" ]] || return 1
   [[ -x "${RUNTIME_SHELL}" ]] || return 1
 }
 
@@ -346,7 +348,7 @@ runner_validate_runtime_environment() {
 # Select JSON diagnostics before metadata validation, because metadata commands
 # may fail before their normal argument parser can run.
 RUNNER_ERROR_FORMAT=text
-if [[ "${1:-}" == "info" && "${2:-}" == "--format" && "${3:-}" == "json" && $# -eq 3 ]]; then
+if [[ ("${1:-}" == "info" || "${1:-}" == "tool") && "${2:-}" == "--format" && "${3:-}" == "json" && $# -eq 3 ]]; then
   RUNNER_ERROR_FORMAT=json
 fi
 
@@ -391,7 +393,7 @@ case "$command" in
     if [[ "${1:-}" != "--" ]]; then
       runner_deprecation "delimiter-free exec will be removed in v1.0.0; use 'runner exec -- <program> [arguments...]'."
       [[ $# -gt 0 ]] || runner_error RUNNER_E_USAGE "missing program" "Use runner exec -- <program> [arguments...]." 2
-      exec "$@"
+      PATH="${RUNNER_CHILD_PATH}" exec "$@"
     fi
     runner_exec "$@"
     ;;

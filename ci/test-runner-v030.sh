@@ -6,14 +6,17 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="${IMAGE:?IMAGE must name the image under test}"
 PYTHON="${PYTHON:-python3}"
+EXPECTED_RUNNER_VERSION="${EXPECTED_RUNNER_VERSION:-0.3.0}"
+EXPECTED_IMAGE_VERSION="${EXPECTED_IMAGE_VERSION:-${EXPECTED_RUNNER_VERSION}}"
 FIXTURE_DIR="${ROOT_DIR}/ci/fixtures/v030-derived"
 FIXTURE_IMAGE="${IMAGE}-v030-fixture"
 INVALID_RUNTIME_IMAGE="${IMAGE}-v030-invalid-runtime"
+WORKDIR_FIXTURE_IMAGE="${IMAGE}-workdir-fixture"
 TMP_DIR="$(mktemp -d)"
 
 cleanup() {
   rm -rf "${TMP_DIR}"
-  docker image rm -f "${FIXTURE_IMAGE}" "${INVALID_RUNTIME_IMAGE}" >/dev/null 2>&1 || true
+  docker image rm -f "${FIXTURE_IMAGE}" "${INVALID_RUNTIME_IMAGE}" "${WORKDIR_FIXTURE_IMAGE}" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -34,9 +37,9 @@ echo "==> v0.3 canonical dispatcher tests for image: ${IMAGE}"
 
 docker run --rm "${IMAGE}" --help >"${TMP_DIR}/help.out"
 grep -Fx '  runner exec -- <program> [arguments...]' "${TMP_DIR}/help.out" >/dev/null
-docker run --rm "${IMAGE}" --version | grep -Fx 'runner 0.3.0 (contract v001)' >/dev/null
+docker run --rm "${IMAGE}" --version | grep -Fx "runner ${EXPECTED_RUNNER_VERSION} (contract v001)" >/dev/null
 docker run --rm "${IMAGE}" info --format json >"${TMP_DIR}/base-info.json"
-"${PYTHON}" - "${TMP_DIR}/base-info.json" <<'PY'
+"${PYTHON}" - "${TMP_DIR}/base-info.json" "${EXPECTED_RUNNER_VERSION}" "${EXPECTED_IMAGE_VERSION}" <<'PY'
 import json
 import pathlib
 import sys
@@ -44,13 +47,16 @@ import sys
 value = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
 assert value["schema_version"] == 1
 assert set(value) == {"schema_version", "runner", "image", "runtime", "tools"}
-assert value["runner"] == {"name": "runner", "version": "0.3.0", "contract_version": "v001"}
+assert value["runner"] == {"name": "runner", "version": sys.argv[2], "contract_version": "v001"}
+assert value["image"]["version"] == sys.argv[3]
 assert value["runtime"]["platform"] == "linux"
 assert value["runtime"]["architecture"] == "amd64"
 assert value["tools"] == []
 PY
 
 docker build --build-arg "BASE_IMAGE=${IMAGE}" -t "${FIXTURE_IMAGE}" "${FIXTURE_DIR}"
+docker run --rm "${FIXTURE_IMAGE}" exec -- sample-helper helper-path >"${TMP_DIR}/helper.out"
+grep -Fx 'sample stdout: helper-path' "${TMP_DIR}/helper.out" >/dev/null
 docker run --rm "${FIXTURE_IMAGE}" tool --format json >"${TMP_DIR}/tools.json"
 "${PYTHON}" - "${TMP_DIR}/tools.json" <<'PY'
 import json
@@ -85,6 +91,16 @@ grep -Fx 'exec-ok' "${TMP_DIR}/exec.out" >/dev/null
 docker run --rm "${IMAGE}" exec printf '%s' legacy-exec >"${TMP_DIR}/legacy-exec.out" 2>"${TMP_DIR}/legacy-exec.err"
 grep -Fx 'legacy-exec' "${TMP_DIR}/legacy-exec.out" >/dev/null
 test "$(grep -c '^DEPRECATED:' "${TMP_DIR}/legacy-exec.err")" -eq 1
+
+workdir_context="${TMP_DIR}/workdir-image"
+mkdir -p "${workdir_context}"
+printf '%s\n' "FROM ${IMAGE}" 'USER root' 'RUN mkdir /workspace/subdir && chown 10001:10001 /workspace/subdir' 'USER runner' >"${workdir_context}/Dockerfile"
+docker build -t "${WORKDIR_FIXTURE_IMAGE}" "${workdir_context}" >/dev/null
+docker run --rm --workdir /workspace/subdir "${WORKDIR_FIXTURE_IMAGE}" exec -- pwd | grep -Fx '/workspace/subdir' >/dev/null
+mkdir -p "${TMP_DIR}/mounted-subdir"
+chmod 0777 "${TMP_DIR}/mounted-subdir"
+docker run --rm --workdir /workspace/subdir -v "${TMP_DIR}/mounted-subdir:/workspace/subdir" "${IMAGE}" exec -- sh -c 'test -w . && pwd' | grep -Fx '/workspace/subdir' >/dev/null
+docker image rm -f "${WORKDIR_FIXTURE_IMAGE}" >/dev/null 2>&1 || true
 
 expect_exit 2 docker run --rm "${IMAGE}" info --format yaml >"${TMP_DIR}/format.out" 2>"${TMP_DIR}/format.err"
 grep -F 'RUNNER_E_FORMAT' "${TMP_DIR}/format.err" >/dev/null

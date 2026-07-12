@@ -2,9 +2,4 @@
 
 set -Eeuo pipefail
 
-if [[ "${1:-}" == "--fail" ]]; then
-  printf 'sample stderr\n' >&2
-  exit 37
-fi
-
-printf 'sample stdout: %s\n' "$*"
+exec sample-helper "$@"

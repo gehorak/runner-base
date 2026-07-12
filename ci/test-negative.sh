@@ -5,7 +5,8 @@ set -Eeuo pipefail
 
 IMAGE="${IMAGE:?IMAGE variable must be set}"
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "${TMP_DIR}"' EXIT
+STARTUP_IMAGE="${IMAGE}-startup-attack"
+trap 'rm -rf "${TMP_DIR}"; docker image rm -f "${STARTUP_IMAGE}" >/dev/null 2>&1 || true' EXIT
 
 expect_failure() {
   local expected_exit="$1"
@@ -52,5 +53,37 @@ path_hijack_exit=$?
 set -e
 [[ "$path_hijack_exit" -eq 2 ]]
 grep -F RUNNER_E_ROOT "${TMP_DIR}/path-hijack.err" >/dev/null
+
+startup_context="${TMP_DIR}/startup-context"
+mkdir -p "${startup_context}"
+printf '%s\n' \
+  "FROM ${IMAGE}" \
+  'USER root' \
+  "RUN printf 'touch /tmp/runner-bash-env-marker\\nexit 99\\n' > /tmp/runner-bash-env" \
+  'ENV BASH_ENV=/tmp/runner-bash-env' \
+  'USER runner' \
+  >"${startup_context}/Dockerfile"
+docker build -t "${STARTUP_IMAGE}" "${startup_context}" >/dev/null
+
+startup_container_id="$(docker create "${STARTUP_IMAGE}" info)"
+docker start -a "${startup_container_id}" >/dev/null
+if docker cp "${startup_container_id}:/tmp/runner-bash-env-marker" "${TMP_DIR}/bash-env-marker" >/dev/null 2>&1; then
+  echo 'ERROR: BASH_ENV payload executed before Runner guards' >&2
+  exit 1
+fi
+docker rm -f "${startup_container_id}" >/dev/null
+
+set +e
+function_container_id="$(docker create --user 0 --env 'BASH_FUNC_runner_error%%=() { touch /tmp/runner-imported-function; exit 99; }' "${IMAGE}" info)"
+docker start -a "${function_container_id}" >/dev/null 2>"${TMP_DIR}/function-import.err"
+function_import_exit=$?
+set -e
+[[ "${function_import_exit}" -eq 2 ]]
+grep -F RUNNER_E_ROOT "${TMP_DIR}/function-import.err" >/dev/null
+if docker cp "${function_container_id}:/tmp/runner-imported-function" "${TMP_DIR}/function-marker" >/dev/null 2>&1; then
+  echo 'ERROR: imported Bash function executed before Runner guards' >&2
+  exit 1
+fi
+docker rm -f "${function_container_id}" >/dev/null
 
 echo "==> Negative tests passed"

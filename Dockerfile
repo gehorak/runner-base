@@ -116,11 +116,6 @@ RUN . /usr/local/lib/runner/metadata.sh \
  && [[ "${RUNTIME_USER_HOME}" == "/home/runner" ]] \
  && [[ "${RUNTIME_SHELL}" == "/bin/bash" ]] \
  && [[ "${RUNTIME_WORKDIR}" == "/workspace" ]] \
- && install -d \
-      --owner root \
-      --group root \
-      --mode 0755 \
-      /usr/local/lib/runner.d \
  && groupadd --gid "${RUNTIME_USER_GID}" "${RUNTIME_USER_NAME}" \
  && useradd \
       --uid "${RUNTIME_USER_UID}" \

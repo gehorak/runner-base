@@ -70,6 +70,9 @@ docker run --rm "${IMAGE}" exec -- sh -c 'test "$HOME" = "/home/runner" && test 
 echo "==> Smoke: workspace exists and is writable"
 docker run --rm "${IMAGE}" exec -- sh -c 'test -d /workspace && test -w /workspace && probe=/workspace/.runner-smoke-write && : > "$probe" && rm "$probe"'
 
+echo "==> Smoke: image default workdir is /workspace"
+docker image inspect "${IMAGE}" --format '{{.Config.WorkingDir}}' | grep -Fx '/workspace' >/dev/null
+
 # -----------------------------------------------------------------------------
 # Test 5: Explicit system command execution
 #
