@@ -189,7 +189,7 @@ jobs:
           set -Eeuo pipefail
           docker run --rm \
             --volume "${PWD}:/work:ro" \
-            aquasec/trivy:0.63.0 \
+            aquasec/trivy@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 \
             image --input /work/runner-scan.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
 

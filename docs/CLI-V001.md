@@ -108,14 +108,14 @@ The first token after `--` is the program. All following tokens are passed uncha
 | --- | --- | --- |
 | `runner about` | `runner info --format text` | Run canonical behavior and emit one deprecation message to stderr. |
 | `runner version` | `runner --version` | Run canonical behavior and emit one deprecation message to stderr. |
-| `runner <plugin> ...` | `runner tool <name> ...` | Invoke the mapped canonical tool and emit one deprecation message to stderr. |
+| `runner <tool> ...` | `runner tool <name> ...` | Invoke the mapped canonical declared tool and emit one deprecation message to stderr. |
 | `runner exec <program> ...` | `runner exec -- <program> ...` | Preserve arguments and child status; emit one deprecation message to stderr. |
 
-The deprecation message must not change successful data output or the child exit status. No new direct plugin command may be introduced during the bridge.
+The deprecation message must not change successful data output or the child exit status. No new direct declared-tool command may be introduced during the bridge.
 
 ## Hard cutover
 
-In `runner-base v1.0.0`, `about`, direct `version`, direct plugin commands, and delimiter-free `exec` are removed from the public contract. Only the canonical v001 surface remains supported.
+In `runner-base v1.0.0`, `about`, direct `version`, direct declared-tool commands, and delimiter-free `exec` are removed from the public contract. Only the canonical v001 surface remains supported.
 
 ## Explicit non-goals
 

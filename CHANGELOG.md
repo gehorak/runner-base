@@ -24,6 +24,12 @@
 
 ### Changed
 - Release-evidence contract now records CLI v001 compatibility-bridge validation
+- Runner startup uses privileged Bash mode, runtime metadata permits workdir overrides, and child processes retain their derived-image PATH.
+- Derived tools use the declarative registry and explicit executable bindings; runtime plugin-directory discovery is not part of the public model.
+
+### Fixed
+- JSON contract errors are selected for both `info --format json` and `tool --format json` before metadata validation.
+- Release candidates validate actual runtime image identity, serialize release runs, pin the vulnerability scanner, and record the canonical test list.
 
 ### Notes
 - This is a local release candidate and has not been pushed, tagged, published, or released.

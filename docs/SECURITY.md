@@ -35,7 +35,9 @@ Replace placeholders only with a fixed SemVer and digest recorded by public rele
 
 - Build-time and materialized metadata are literal `KEY=VALUE` data, not shell code.
 - `eval` is forbidden. The only trusted sourced file is the Runner metadata parser library.
-- The dispatcher uses an absolute Bash shebang, restores a fixed system `PATH`, and uses absolute system utilities for its pre-dispatch guards. A caller-supplied `PATH` cannot select Runner-owned commands.
+- The dispatcher uses privileged Bash mode, a fixed internal system `PATH`, and absolute system utilities for pre-dispatch guards. `BASH_ENV` and imported Bash functions are not accepted before Runner-owned checks, and a caller-supplied `PATH` cannot select Runner-owned commands.
+- The fixed internal `PATH` is not imposed on explicit child commands. Registered tools and `runner exec --` receive the caller or derived-image PATH, while Runner-owned lookup remains independent from it.
+- `/workspace` is the image default workdir and a materialized runtime contract path; callers may select a writable subdirectory with Docker `--workdir`.
 - Do not place credentials, private endpoints, or raw environment dumps in release evidence, CLI fixtures, logs, or image metadata.
 
 ## Vulnerability scanning policy

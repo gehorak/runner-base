@@ -157,8 +157,8 @@ again at runtime.
 
 The base image (`runner-base`) guarantees:
 
-* the plugin directory exists
-* the plugin directory is expected to be empty
+* the base declarative tool registry is empty
+* no runtime directory is scanned for public commands
 * no domain-specific tooling is present
 
 ---
@@ -252,7 +252,7 @@ Interactive shell access:
 
 Derived (domain) images MAY:
 
-* add plugins
+* add declaratively registered tools with explicit executable bindings
 * add domain-specific tooling
 * extend `runner info` output
 

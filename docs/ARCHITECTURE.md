@@ -32,7 +32,7 @@ The platform consists of:
 
 * a **base image** (`runner-base`)
 * a **single execution entrypoint** (`runner`)
-* an **explicit plugin mechanism**
+* a **declarative tool registry**
 * a **strict execution model**
 
 All domain-specific images (terraform, ansible, kubectl, …)
@@ -65,12 +65,12 @@ Each layer has **a single, clearly defined responsibility**.
 +---------------------------------------------------+
 | Domain Image (terraform, ansible, kubectl, …)     |
 | - domain tooling                                  |
-| - domain-specific plugins                         |
+| - domain-specific declarative tools                |
 +---------------------------------------------------+
 | runner-base                                       |
 | - execution model                                 |
 | - security baseline                               |
-| - plugin mechanism                                |
+| - tool registry materialization                   |
 +---------------------------------------------------+
 | runner (entrypoint)                               |
 | - command dispatch                                |
@@ -92,7 +92,7 @@ It is responsible for:
 * establishing the execution model
 * enforcing non-root execution
 * providing a minimal runtime environment
-* exposing a stable plugin mechanism
+* exposing a stable declarative tool registry
 * materializing image identity at runtime
 
 The base image intentionally provides **no domain-specific tooling**.
@@ -119,7 +119,7 @@ are defined in `docs/CONTRACT.md`.
 The runner follows a strictly ordered dispatch model:
 
 1. core commands
-2. plugin commands
+2. declared tool commands
 3. explicit failure
 
 There is no guessing, fallback, or implicit forwarding.
@@ -129,19 +129,18 @@ Behavioral details are defined in the contract.
 
 ---
 
-## Plugin architecture
+## Declarative tool registry
 
-Plugins provide domain-specific extensions.
+Derived images declare domain-specific tools in metadata.
 
 Architectural properties:
 
-* plugins are executable files
-* located in `/usr/local/lib/runner.d/`
-* discovered explicitly at runtime
-* invoked only by name
+* canonical names, versions, aliases, and executable bindings are materialized from validated metadata
+* executable paths are explicit and absolute
+* no runtime directory discovery creates commands
+* derived overlays cannot replace base platform or runtime metadata
 
-The base image guarantees the presence of the plugin mechanism
-but ships with **no plugins**.
+The base image ships with an empty declarative registry and no domain tools.
 
 ---
 

@@ -51,7 +51,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: runner-base-release-${{ github.ref }}
+  group: runner-base-release
   cancel-in-progress: false
 
 
@@ -138,7 +138,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           git fetch origin main
-          git merge-base --is-ancestor HEAD origin/main
+          [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || {
+            echo "ERROR: release tag must point exactly at origin/main HEAD" >&2
+            exit 1
+          }
+          current_version="${{ steps.semver.outputs.version }}"
+          highest="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vx "${{ steps.semver.outputs.tag }}" | sort -V | tail -n 1 || true)"
+          if [[ -n "${highest}" ]] && [[ "$(printf '%s\n%s\n' "${highest#v}" "${current_version}" | sort -V | tail -n 1)" != "${current_version}" ]]; then
+            echo "ERROR: release version must be higher than ${highest}" >&2
+            exit 1
+          fi
 
       - name: Prepare tag-bound release build context
         shell: bash
@@ -199,6 +208,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Refuse an existing immutable release tag
+        shell: bash
+        env:
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          set -Eeuo pipefail
+          if docker manifest inspect "ghcr.io/gehorak/runner-base:${VERSION}" >/dev/null 2>&1; then
+            echo "ERROR: immutable release tag ${VERSION} is already published" >&2
+            exit 1
+          fi
+
 
       # -----------------------------------------------------------------------
       # Build image locally
@@ -217,6 +237,18 @@ jobs:
             runner-release:test
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Prepare release artifacts and validate actual candidate identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p release-artifacts
+          python3 ci/validate-image-identity.py \
+            --image runner-release:test \
+            --runner-version "${{ steps.semver.outputs.version }}" \
+            --image-version "${{ steps.semver.outputs.version }}" \
+            --image-revision "${{ steps.semver.outputs.commit }}" \
+            --output release-artifacts/actual-image-identity.json
 
 
       # -----------------------------------------------------------------------
@@ -252,11 +284,12 @@ jobs:
           set -Eeuo pipefail
           bash ci/run-base-tests.sh
 
-      - name: Prepare release evidence directory
+      - name: Scan exact tested release candidate
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p release-artifacts
+          docker image save runner-release:test --output release-artifacts/runner-release.test.tar
+          docker run --rm --volume "${PWD}:/work:ro" aquasec/trivy@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 image --input /work/release-artifacts/runner-release.test.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
       - name: Generate SPDX SBOM for tested image
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
@@ -328,6 +361,14 @@ jobs:
           previous_reference="ghcr.io/gehorak/runner-base:${previous_tag#v}"
           previous_digest="sha256:$(docker buildx imagetools inspect --raw "${previous_reference}" | sha256sum | cut -d ' ' -f 1)"
 
+          for published_tag in "${VERSION}" "${VERSION_MM}" latest; do
+            observed_digest="sha256:$(docker buildx imagetools inspect --raw "ghcr.io/gehorak/runner-base:${published_tag}" | sha256sum | cut -d ' ' -f 1)"
+            [[ "${observed_digest}" == "${published_digest}" ]] || {
+              echo "ERROR: published tag ${published_tag} does not match tested candidate digest" >&2
+              exit 1
+            }
+          done
+
           {
             echo "published_reference=${published_reference}"
             echo "published_digest=${published_digest}"
@@ -362,20 +403,19 @@ jobs:
           RUNNER_RELEASE_TAG: ${{ steps.semver.outputs.tag }}
           RUNNER_RELEASE_PUBLISHED_REFERENCE: ${{ steps.digests.outputs.published_reference }}
           RUNNER_RELEASE_PUBLISHED_DIGEST: ${{ steps.digests.outputs.published_digest }}
-          RUNNER_RELEASE_PARENT_REFERENCE: debian:bookworm-slim@sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
-          RUNNER_RELEASE_PARENT_DIGEST: sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
           RUNNER_RELEASE_SBOM_REFERENCE: runner-base-${{ steps.semver.outputs.version }}.sbom.spdx.json
           RUNNER_RELEASE_PROVENANCE_REFERENCE: ${{ steps.attest-provenance.outputs.attestation-url }}
           RUNNER_RELEASE_PREVIOUS_REFERENCE: ${{ steps.digests.outputs.previous_reference }}
           RUNNER_RELEASE_PREVIOUS_DIGEST: ${{ steps.digests.outputs.previous_digest }}
-          RUNNER_RELEASE_TESTS: cli-v001-contract,test-release-evidence,test-shell-safety,test-metadata-grammar,test-base-dependencies,test-smoke,test-image-identity,test-runner-core,test-negative,test-runner-plugin,test-runner-v030
         run: |
           set -Eeuo pipefail
           RUNNER_RELEASE_CANDIDATE_IMAGE_ID="$(docker image inspect runner-release:test --format '{{.Id}}')"
-          RUNNER_RELEASE_IMAGE_VERSION="${{ steps.semver.outputs.version }}"
-          RUNNER_RELEASE_IMAGE_REVISION="${{ steps.semver.outputs.commit }}"
+          RUNNER_RELEASE_ACTUAL_IDENTITY_FILE=release-artifacts/actual-image-identity.json
+          RUNNER_RELEASE_TESTS="$(bash ci/run-base-tests.sh --list | paste -sd, -)"
+          RUNNER_RELEASE_PARENT_REFERENCE="$(python3 ci/parent-reference.py --field reference)"
+          RUNNER_RELEASE_PARENT_DIGEST="$(python3 ci/parent-reference.py --field digest)"
           export RUNNER_RELEASE_CANDIDATE_IMAGE_ID
-          export RUNNER_RELEASE_IMAGE_VERSION RUNNER_RELEASE_IMAGE_REVISION
+          export RUNNER_RELEASE_ACTUAL_IDENTITY_FILE RUNNER_RELEASE_TESTS RUNNER_RELEASE_PARENT_REFERENCE RUNNER_RELEASE_PARENT_DIGEST
           python3 ci/write-release-evidence.py
           python3 ci/validate-release-evidence.py "${RUNNER_RELEASE_EVIDENCE_OUTPUT}"
 

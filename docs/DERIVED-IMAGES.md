@@ -24,6 +24,14 @@ Derived images must not replace the entrypoint, parser, runtime user model, meta
 
 Use canonical tool names in `RUNNER_TOOL_NAMES`, lexical ordering, explicit executable bindings, and optional lexical bridge aliases. A derived image supplies an overlay manifest containing only its identity and `RUNNER_TOOL_*` declarations, then runs the base-owned `runner_metadata_materialize_derived_manifest` during its build. Runner version, contract version, supported platform, and runtime-user fields remain materialized from the parent and cannot be overridden. It owns tests for every provided domain tool, including `runner tool <name>`, declared aliases, expected failure behavior, and the parent base digest.
 
+## Tool integrity evidence
+
+The runtime registry deliberately validates only the canonical name, version,
+explicit executable binding, and aliases. A derived image records artifact
+source, resolved version, and checksum in a release-owned `tools.lock` (or
+equivalent evidence) and verifies that evidence during its own build or release
+process. Runner base does not fetch or validate remote artifacts at runtime.
+
 ## Compatibility and upgrades
 
 Record the parent digest adopted by each derived release. A derived image must state which base release and digest it was tested against, then revalidate its domain contract whenever it adopts a new parent digest.

@@ -188,7 +188,7 @@ Exact output formatting is intentionally not tested.
 
 * implicit system command execution fails
 * unknown runner commands fail explicitly
-* invalid plugin command names fail explicitly before lookup
+* invalid declared-tool command names fail explicitly before lookup
 * no command guessing or forwarding occurs
 * effective UID `0` is rejected even if the container runtime overrides the image user
 * a caller-provided `PATH` cannot replace the dispatcher interpreter or root guard
@@ -242,13 +242,13 @@ runtime hardening guidance from drifting away from the actual image.
 
 **Purpose**
 
-* Verify plugin mechanism integrity
+* Verify declarative tool-registry integrity
 * Ensure base image minimalism
 
 **Guarantees (base image)**
 
-* plugin directory exists
-* no domain-specific plugins are present
+* registry is empty in the base image
+* no runtime directory discovery is exposed
 
 The synthetic derived compatibility fixture validates declared tool registration,
 aliases, canonical and bridge execution, child exit passthrough, non-executable

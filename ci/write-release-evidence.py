@@ -14,8 +14,7 @@ REQUIRED = (
     "RUNNER_RELEASE_SOURCE_COMMIT",
     "RUNNER_RELEASE_TAG",
     "RUNNER_RELEASE_CANDIDATE_IMAGE_ID",
-    "RUNNER_RELEASE_IMAGE_VERSION",
-    "RUNNER_RELEASE_IMAGE_REVISION",
+    "RUNNER_RELEASE_ACTUAL_IDENTITY_FILE",
     "RUNNER_RELEASE_PUBLISHED_REFERENCE",
     "RUNNER_RELEASE_PUBLISHED_DIGEST",
     "RUNNER_RELEASE_PARENT_REFERENCE",
@@ -41,6 +40,21 @@ def main() -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
+    try:
+        actual_identity = json.loads(Path(values["RUNNER_RELEASE_ACTUAL_IDENTITY_FILE"]).read_text(encoding="utf-8"))
+        runner = actual_identity["runner"]
+        image = actual_identity["image"]
+        runtime = actual_identity["runtime"]
+        if runner != {"name": "runner", "version": values["RUNNER_RELEASE_TAG"][1:], "contract_version": "v001"}:
+            raise ValueError("actual runner identity does not match release tag and contract")
+        if image.get("name") != "runner-base" or image.get("version") != values["RUNNER_RELEASE_TAG"][1:] or image.get("revision") != values["RUNNER_RELEASE_SOURCE_COMMIT"]:
+            raise ValueError("actual image identity does not match release source")
+        if runtime.get("platform") != "linux" or runtime.get("architecture") != "amd64":
+            raise ValueError("actual runtime platform is unsupported")
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: invalid RUNNER_RELEASE_ACTUAL_IDENTITY_FILE: {exc}", file=sys.stderr)
+        return 1
+
     tests = [item for item in os.environ.get("RUNNER_RELEASE_TESTS", "").split(",") if item]
     if not tests:
         print("ERROR: RUNNER_RELEASE_TESTS must list at least one test", file=sys.stderr)
@@ -57,8 +71,8 @@ def main() -> int:
         "image": {
             "candidate_reference": "runner-release:test",
             "candidate_image_id": values["RUNNER_RELEASE_CANDIDATE_IMAGE_ID"],
-            "manifest_version": values["RUNNER_RELEASE_IMAGE_VERSION"],
-            "manifest_revision": values["RUNNER_RELEASE_IMAGE_REVISION"],
+            "manifest_version": image["version"],
+            "manifest_revision": image["revision"],
             "published_reference": values["RUNNER_RELEASE_PUBLISHED_REFERENCE"],
             "published_digest": values["RUNNER_RELEASE_PUBLISHED_DIGEST"],
             "parent_reference": values["RUNNER_RELEASE_PARENT_REFERENCE"],

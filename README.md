@@ -62,10 +62,10 @@ This image provides:
 * a **non-root execution model**
 * an explicit `HOME` and writable default `/workspace`
 
-The base image includes **no domain-specific plugins**.
+The base image includes **no domain-specific tools**.
 
 Additional capabilities may be provided
-by runner plugins in derived images.
+by declarative tool metadata in derived images with explicit executable bindings.
 
 ---
 
