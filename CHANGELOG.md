@@ -9,31 +9,57 @@ refactors without execution-model impact may be omitted.
 
 ## [0.3.0] - Release preparation
 
-### Added
+This release preparation establishes the first public v0.3 platform line. It
+keeps the compatibility bridge explicit, adds the derived-image safeguards
+required before public adoption, and does not claim that a complex real-world
+derived image has already been validated.
 
-- Canonical `runner --help`, `runner --version`, `runner info`, `runner tool`, `runner exec --`, and `runner shell` dispatcher surface.
-- Declarative base-owned tool metadata materialization, runtime JSON metadata, stable Runner-native error identifiers, and v0.3 compatibility tests.
-- Versioned `tools.lock` evidence, a commit-pinned derived-conformance interface, and a scheduled digest-pinned scan of the latest published immutable release.
+### Summary
 
-### Changed
+`v0.3.0` prepares the stable CLI v001 compatibility bridge, non-root runtime,
+strict metadata boundary, derived-image integrity model, reusable conformance
+interface, and release evidence path. It is intended to become a supported base
+for direct use and experimental or validation derived images after a separately
+authorized tag and publication.
 
-- Release evidence records CLI v001 compatibility-bridge validation.
-- Runner startup uses privileged Bash mode, supports runtime workdir overrides, and preserves the caller or derived-image PATH for child processes.
-- Derived tools use the declarative registry and explicit executable bindings; runtime plugin-directory discovery is not part of the public model.
-- The derived runtime contract names shared utilities and workspace, PATH, cache, configuration, temporary-file, and CA responsibilities.
+### Highlights
 
-### Fixed
+- Canonical CLI v001 compatibility bridge
+  - `runner --help`, `runner --version`, `runner info`, `runner tool`, `runner exec --`, and `runner shell` are the stable canonical surface
+  - legacy bridge forms remain deprecated until v1.0.0
+- Runtime and metadata hardening
+  - startup uses privileged Bash protections before Runner-owned guards
+  - runtime metadata is strict literal data and contract errors select JSON before validation when JSON was requested
+  - parent-owned metadata, dispatcher, and parser files are root-owned and non-writable by the runtime user
+- Derived-image contract
+  - runtime tool declarations use explicit executable bindings
+  - v001 `tools.lock` records HTTPS artifact source, version, and SHA-256 evidence
+  - a commit-pinned conformance workflow validates immutable parent references, tools-lock alignment, parent-file integrity, and explicit domain tests
+- Release and supply-chain hardening
+  - release candidates validate actual runtime identity, the canonical suite, pinned Trivy scanning, SPDX SBOM generation, and evidence on one candidate
+  - immutable release recovery fails closed unless the registry configuration digest matches the tested candidate
+  - minor-line and `latest` aliases move only after immutable evidence succeeds
+  - a scheduled workflow scans the latest published strict-SemVer release by immutable digest
 
-- JSON contract errors are selected for both `info --format json` and `tool --format json` before metadata validation.
-- Release candidates validate actual runtime image identity, serialize release runs, pin the vulnerability scanner, and record the canonical test list.
-- Parent-owned metadata, dispatcher, and parser files are verified root-owned and non-writable by the runtime user, including a negative derived fixture.
-- Release finalization resumes only when an existing immutable SemVer reference matches the tested candidate configuration digest; convenience aliases wait for evidence publication.
+### Compatibility
 
-### Notes
+- The fixed non-root runtime user, `linux/amd64` platform, default `/workspace`, and empty base tool registry remain unchanged.
+- `about`, direct `version`, direct declared-tool commands, declared aliases, and delimiter-free `exec` remain bridge forms until v1.0.0.
+- Derived images must use `ghcr.io/gehorak/runner-base:0.3.0@sha256:<published-digest>` after publication; `0.3` and `latest` are not dependency references.
+- No complex real-world derived image has yet been validated. `runner-terraform` remains the planned reference-derived follow-up and requires separate authorization and evidence.
 
-- The release-preparation changes are on `main`; the `v0.3.0` tag, image publication, SBOM, provenance, and release evidence remain separate release actions.
-- `about`, direct `version`, direct declared-tool commands, declared tool-name aliases, and delimiter-free `exec` remain deprecated bridge forms until v1.0.0.
-- No complex real-world derived image has yet been validated; `runner-terraform` remains the planned reference-derived follow-up.
+### Release status
+
+- The release-preparation changes are on `main`.
+- No `v0.3.0` tag, published image, SBOM, provenance, release evidence, or GitHub Release is claimed by this entry.
+- A release run must produce the exact public artifact evidence before this status can be changed to published.
+
+### Upgrade guidance
+
+- Use canonical CLI commands in new automation and keep legacy bridge forms only during the v0.3 compatibility window.
+- Keep derived metadata literal and additive; do not use `source`, quotes, command substitution, or shell control syntax in metadata inputs.
+- Pin derived parents to the published SemVer and digest, record v001 tools-lock evidence, and run the matching conformance bundle plus domain tests.
+- Do not rely on root overrides, mutable aliases, or runtime plugin-directory discovery.
 
 ## [0.2.6] - 2026-07-11
 
