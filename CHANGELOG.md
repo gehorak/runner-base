@@ -50,9 +50,9 @@ authorized tag and publication.
 
 ### Release status
 
-- The release-preparation changes are on `main`.
-- No `v0.3.0` tag, published image, SBOM, provenance, release evidence, or GitHub Release is claimed by this entry.
-- A release run must produce the exact public artifact evidence before this status can be changed to published.
+- The public state of `v0.3.0` is determined exclusively by its matching GitHub Release, immutable image digest, SBOM, provenance, and machine-readable release evidence.
+- This changelog records source history and release intent; it is not public artifact evidence and does not independently establish publication.
+- The tag-triggered release workflow must produce and validate the exact public artifacts before consumers use the release as a dependency.
 
 ### Upgrade guidance
 
