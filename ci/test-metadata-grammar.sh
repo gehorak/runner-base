@@ -12,6 +12,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="${IMAGE:-}"
+PYTHON="${PYTHON:-python3}"
 
 # shellcheck disable=SC1091
 source "${ROOT_DIR}/runner-metadata.sh"
@@ -126,6 +127,60 @@ pipe_err="${tmpdir}/pipe.err"
 printf '%s\n' 'TOOL_BAD=value | cat' >"$pipe_file"
 expect_invalid "$pipe_file" 1 "control operator '|' is not supported" "$pipe_err"
 
+image_contract="${tmpdir}/image-contract.env"
+runtime_contract="${tmpdir}/runtime-contract.env"
+tools_contract="${tmpdir}/tools-contract.env"
+printf '%s\n' \
+  'RUNNER_IMAGE=runner-base' \
+  'RUNNER_DOMAIN=base' \
+  'RUNNER_ROLE=base' \
+  'RUNNER_VERSION=0.3.0' \
+  'RUNNER_CONTRACT_VERSION=v001' \
+  'RUNNER_IMAGE_VERSION=0.3.0' \
+  'RUNNER_IMAGE_REVISION=local' \
+  'RUNNER_SUPPORTED_PLATFORM=linux/amd64' \
+  >"${image_contract}"
+printf '%s\n' \
+  'RUNTIME_USER_NAME=runner' \
+  'RUNTIME_USER_UID=10001' \
+  'RUNTIME_USER_GID=10001' \
+  'RUNTIME_USER_HOME=/home/runner' \
+  'RUNTIME_SHELL=/bin/bash' \
+  'RUNTIME_WORKDIR=/workspace' \
+  >"${runtime_contract}"
+printf 'RUNNER_TOOL_NAMES=\n' >"${tools_contract}"
+runner_metadata_validate_runtime_contract "${image_contract}" "${runtime_contract}" "${tools_contract}"
+
+sed 's/RUNNER_IMAGE_REVISION=local/RUNNER_IMAGE_REVISION=fixture/' "${image_contract}" >"${tmpdir}/invalid-revision.env"
+if runner_metadata_validate_runtime_contract "${tmpdir}/invalid-revision.env" "${runtime_contract}" "${tools_contract}" >/dev/null 2>&1; then
+  fail "expected invalid image revision to fail the runtime contract"
+fi
+sed 's/RUNTIME_USER_UID=10001/RUNTIME_USER_UID=0/' "${runtime_contract}" >"${tmpdir}/invalid-uid.env"
+if runner_metadata_validate_runtime_contract "${image_contract}" "${tmpdir}/invalid-uid.env" "${tools_contract}" >/dev/null 2>&1; then
+  fail "expected root UID to fail the runtime contract"
+fi
+sed 's#RUNTIME_USER_HOME=/home/runner#RUNTIME_USER_HOME=home/runner#' "${runtime_contract}" >"${tmpdir}/invalid-home.env"
+if runner_metadata_validate_runtime_contract "${image_contract}" "${tmpdir}/invalid-home.env" "${tools_contract}" >/dev/null 2>&1; then
+  fail "expected relative runtime home to fail the runtime contract"
+fi
+
+derived_manifest="${tmpdir}/derived.manifest"
+printf '%s\n' \
+  'RUNNER_IMAGE=runner-derived' \
+  'RUNNER_DOMAIN=fixture' \
+  'RUNNER_ROLE=fixture' \
+  'RUNNER_IMAGE_VERSION=0.3.0' \
+  'RUNNER_IMAGE_REVISION=local' \
+  'RUNNER_TOOL_NAMES=' \
+  >"${derived_manifest}"
+runner_metadata_validate_derived_manifest "${derived_manifest}"
+printf 'RUNNER_VERSION=9.9.9\n' >>"${derived_manifest}"
+if runner_metadata_validate_derived_manifest "${derived_manifest}" >/dev/null 2>&1; then
+  fail "expected derived manifest platform override to fail"
+fi
+
+echo "==> Runtime and derived metadata contracts reject incomplete or overridden values"
+
 if [[ -n "$IMAGE" ]]; then
   echo "==> Runtime integration rejects invalid tools metadata"
 
@@ -152,6 +207,23 @@ EOF
   fi
 
   assert_contains "$runtime_err" "RUNNER_E_CONTRACT: Required Runner metadata is missing or invalid."
+
+  runtime_json_container_id="$(docker create "$runtime_tag" info --format json)"
+  runtime_json_out="${tmpdir}/runtime-json.out"
+  runtime_json_err="${tmpdir}/runtime-json.err"
+  if docker start -a "$runtime_json_container_id" >"$runtime_json_out" 2>"$runtime_json_err"; then
+    fail "expected JSON runtime metadata validation to fail"
+  fi
+  "${PYTHON}" - "$runtime_json_err" <<'PY'
+import json
+import pathlib
+import sys
+
+value = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert value["schema_version"] == 1
+assert value["error"]["id"] == "RUNNER_E_CONTRACT"
+PY
+  docker rm -f "$runtime_json_container_id" >/dev/null
 
   if docker cp "$runtime_container_id:/tmp/metadata-executed" "${tmpdir}/runtime-marker" >/dev/null 2>&1; then
     fail "runtime metadata executed shell syntax unexpectedly"

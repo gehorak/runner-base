@@ -80,8 +80,8 @@ RUNNER_TOOL_NAMES=
 # Defines the default execution environment inside the container.
 # These values describe *how* the image runs, not *what* it provides.
 # -----------------------------------------------------------------------------
-# If RUNTIME_USER_NAME or RUNTIME_WORKDIR changes here, update the matching
-# Dockerfile ARG defaults manually to keep local builds aligned.
+# The Dockerfile validates these fixed values before creating the runtime
+# account. Docker build arguments cannot override this runtime contract.
 
 
 RUNTIME_USER_NAME=runner

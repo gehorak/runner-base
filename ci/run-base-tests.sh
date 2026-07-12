@@ -13,6 +13,8 @@ export IMAGE
 
 for test_script in \
   ci/test-release-evidence.sh \
+  ci/test-release-identity.sh \
+  ci/test-dockerfile-structure.py \
   ci/test-shell-safety.sh \
   ci/test-metadata-grammar.sh \
   ci/test-base-dependencies.sh \
@@ -20,9 +22,13 @@ for test_script in \
   ci/test-image-identity.sh \
   ci/test-runner-core.sh \
   ci/test-negative.sh \
+  ci/test-hardened-runtime.sh \
   ci/test-runner-plugin.sh \
   ci/test-runner-v030.sh; do
-  bash "${ROOT_DIR}/${test_script}"
+  case "${test_script}" in
+    *.py) "${PYTHON}" "${ROOT_DIR}/${test_script}" ;;
+    *) bash "${ROOT_DIR}/${test_script}" ;;
+  esac
 done
 
 echo "==> Base-owned test suite passed"

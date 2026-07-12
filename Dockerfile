@@ -110,6 +110,12 @@ RUN chmod 0444 /usr/local/lib/runner/metadata.sh \
 
 RUN . /usr/local/lib/runner/metadata.sh \
  && runner_metadata_export_file /etc/runner/runtime.env \
+ && [[ "${RUNTIME_USER_NAME}" == "runner" ]] \
+ && [[ "${RUNTIME_USER_UID}" == "10001" ]] \
+ && [[ "${RUNTIME_USER_GID}" == "10001" ]] \
+ && [[ "${RUNTIME_USER_HOME}" == "/home/runner" ]] \
+ && [[ "${RUNTIME_SHELL}" == "/bin/bash" ]] \
+ && [[ "${RUNTIME_WORKDIR}" == "/workspace" ]] \
  && install -d \
       --owner root \
       --group root \
@@ -143,21 +149,18 @@ RUN chmod 0755 /usr/local/bin/runner
 # =============================================================================
 # Runtime defaults (apply runtime contract)
 #
-# Defaults are defined here.
-# Optional build-time overrides may replace them.
+# The base runtime identity is intentionally fixed. It is validated against the
+# manifest above; accepting Docker build-argument overrides would create a
+# second source of truth between image metadata and the actual USER/WORKDIR.
 # =============================================================================
 
-ARG RUNTIME_USER_NAME=runner
-ARG RUNTIME_USER_HOME=/home/runner
-ARG RUNTIME_WORKDIR=/workspace
+ENV RUNTIME_USER_NAME=runner
+ENV RUNTIME_USER_HOME=/home/runner
+ENV RUNTIME_WORKDIR=/workspace
+ENV HOME=/home/runner
 
-ENV RUNTIME_USER_NAME=${RUNTIME_USER_NAME}
-ENV RUNTIME_USER_HOME=${RUNTIME_USER_HOME}
-ENV RUNTIME_WORKDIR=${RUNTIME_WORKDIR}
-ENV HOME=${RUNTIME_USER_HOME}
-
-WORKDIR ${RUNTIME_WORKDIR}
-USER ${RUNTIME_USER_NAME}
+WORKDIR /workspace
+USER runner
 
 
 

@@ -151,12 +151,6 @@ build: check-manifest
 	@echo "==> Building image: $(IMAGE)"
 	docker build \
 	  --platform $(PLATFORM) \
-	  --build-arg RUNTIME_USER_NAME=$(RUNTIME_USER_NAME) \
-	  --build-arg RUNTIME_USER_UID=$(RUNTIME_USER_UID) \
-	  --build-arg RUNTIME_USER_GID=$(RUNTIME_USER_GID) \
-	  --build-arg RUNTIME_USER_HOME=$(RUNTIME_USER_HOME) \
-	  --build-arg RUNTIME_SHELL=$(RUNTIME_SHELL) \
-	  --build-arg RUNTIME_WORKDIR=$(RUNTIME_WORKDIR) \
 	  -t $(IMAGE) \
 	  $(BUILD_CONTEXT)
 

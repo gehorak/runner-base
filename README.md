@@ -105,18 +105,18 @@ and are guaranteed across all runner images.
 
 ---
 
-### Plugin commands
+### Derived tools
 
-Derived images register declarative tool metadata; direct tool commands are deprecated bridge aliases only.
+Derived images register declarative tool metadata; direct tool commands are deprecated bridge aliases only. The canonical registry is exposed through `runner tool`, not through the image identity command.
 
-Available plugins can be listed using:
+Available tools can be listed using:
 
 ```bash
-docker run --rm <image> info
-docker run --rm runner-base info
+docker run --rm <image> tool --format json
+docker run --rm runner-base tool
 ```
 
-The base image ships with **no plugins** by design.
+The base image ships with **no declared tools** by design.
 
 ---
 
@@ -162,6 +162,7 @@ docker run --rm runner-base exec -- id
 * `docs/CLI-V001.md` — future CLI target for v0.3.0; not current v0.2.x behavior
 * `docs/USAGE.md` — immutable-reference and workspace usage guidance
 * `docs/SECURITY.md` — operator security model and container hardening guidance
+* `SECURITY.md` — repository security reporting entrypoint
 * `docs/DERIVED-IMAGES.md` — normative derived-image authoring contract
 * `docs/TROUBLESHOOTING.md` — mount, network, metadata, and root-override diagnostics
 * `docs/RELEASES.md` — platform scope, evidence, rollback, yanking, and signing policy

@@ -50,6 +50,10 @@ permissions:
   attestations: write
   id-token: write
 
+concurrency:
+  group: runner-base-release-${{ github.ref }}
+  cancel-in-progress: false
+
 
 # -----------------------------------------------------------------------------
 # Jobs
@@ -69,6 +73,7 @@ jobs:
   release:
     name: Build, validate, and publish image
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
 
@@ -135,6 +140,22 @@ jobs:
           git fetch origin main
           git merge-base --is-ancestor HEAD origin/main
 
+      - name: Prepare tag-bound release build context
+        shell: bash
+        env:
+          TAG: ${{ steps.semver.outputs.tag }}
+          COMMIT: ${{ steps.semver.outputs.commit }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf release-context
+          mkdir release-context
+          git archive --format=tar HEAD | tar -x -C release-context
+          python3 ci/prepare-release-manifest.py \
+            --input image.manifest \
+            --output release-context/image.manifest \
+            --tag "${TAG}" \
+            --revision "${COMMIT}"
+
 
 
 
@@ -189,7 +210,7 @@ jobs:
       - name: Build tested release image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: .
+          context: release-context
           load: true
           platforms: linux/amd64
           tags: |
@@ -285,9 +306,22 @@ jobs:
           published_reference="ghcr.io/gehorak/runner-base:${VERSION}"
           published_digest="sha256:$(docker buildx imagetools inspect --raw "${published_reference}" | sha256sum | cut -d ' ' -f 1)"
 
-          previous_tag="$(git tag --merged HEAD --list 'v*' --sort=-version:refname | grep -vx "${TAG}" | head -n 1 || true)"
+          previous_tag=""
+          IFS='.' read -r current_major current_minor current_patch <<< "${VERSION}"
+          while IFS= read -r candidate; do
+            [[ "${candidate}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || continue
+            candidate_major="${BASH_REMATCH[1]}"
+            candidate_minor="${BASH_REMATCH[2]}"
+            candidate_patch="${BASH_REMATCH[3]}"
+            if (( candidate_major < current_major )) \
+              || (( candidate_major == current_major && candidate_minor < current_minor )) \
+              || (( candidate_major == current_major && candidate_minor == current_minor && candidate_patch < current_patch )); then
+              previous_tag="${candidate}"
+              break
+            fi
+          done < <(git tag --merged HEAD --list 'v*' --sort=-version:refname)
           [[ -n "${previous_tag}" ]] || {
-            echo "ERROR: no previous SemVer tag is available for rollback evidence" >&2
+            echo "ERROR: no prior strict SemVer tag is available for rollback evidence" >&2
             exit 1
           }
 
@@ -338,7 +372,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           RUNNER_RELEASE_CANDIDATE_IMAGE_ID="$(docker image inspect runner-release:test --format '{{.Id}}')"
+          RUNNER_RELEASE_IMAGE_VERSION="${{ steps.semver.outputs.version }}"
+          RUNNER_RELEASE_IMAGE_REVISION="${{ steps.semver.outputs.commit }}"
           export RUNNER_RELEASE_CANDIDATE_IMAGE_ID
+          export RUNNER_RELEASE_IMAGE_VERSION RUNNER_RELEASE_IMAGE_REVISION
           python3 ci/write-release-evidence.py
           python3 ci/validate-release-evidence.py "${RUNNER_RELEASE_EVIDENCE_OUTPUT}"
 

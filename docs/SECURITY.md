@@ -35,7 +35,16 @@ Replace placeholders only with a fixed SemVer and digest recorded by public rele
 
 - Build-time and materialized metadata are literal `KEY=VALUE` data, not shell code.
 - `eval` is forbidden. The only trusted sourced file is the Runner metadata parser library.
+- The dispatcher uses an absolute Bash shebang, restores a fixed system `PATH`, and uses absolute system utilities for its pre-dispatch guards. A caller-supplied `PATH` cannot select Runner-owned commands.
 - Do not place credentials, private endpoints, or raw environment dumps in release evidence, CLI fixtures, logs, or image metadata.
+
+## Vulnerability scanning policy
+
+CI scans the image built from the submitted source with Trivy `0.63.0` for
+fixable `HIGH` and `CRITICAL` vulnerabilities. A finding blocks the change
+unless its documented exception records the scanner, advisory, affected digest,
+expiry date, and a tracked remediation version. Exceptions are reviewed at
+least monthly and are never carried into a release without an explicit renewal.
 
 ## Security response
 

@@ -14,6 +14,8 @@ REQUIRED = (
     "RUNNER_RELEASE_SOURCE_COMMIT",
     "RUNNER_RELEASE_TAG",
     "RUNNER_RELEASE_CANDIDATE_IMAGE_ID",
+    "RUNNER_RELEASE_IMAGE_VERSION",
+    "RUNNER_RELEASE_IMAGE_REVISION",
     "RUNNER_RELEASE_PUBLISHED_REFERENCE",
     "RUNNER_RELEASE_PUBLISHED_DIGEST",
     "RUNNER_RELEASE_PARENT_REFERENCE",
@@ -55,6 +57,8 @@ def main() -> int:
         "image": {
             "candidate_reference": "runner-release:test",
             "candidate_image_id": values["RUNNER_RELEASE_CANDIDATE_IMAGE_ID"],
+            "manifest_version": values["RUNNER_RELEASE_IMAGE_VERSION"],
+            "manifest_revision": values["RUNNER_RELEASE_IMAGE_REVISION"],
             "published_reference": values["RUNNER_RELEASE_PUBLISHED_REFERENCE"],
             "published_digest": values["RUNNER_RELEASE_PUBLISHED_DIGEST"],
             "parent_reference": values["RUNNER_RELEASE_PARENT_REFERENCE"],

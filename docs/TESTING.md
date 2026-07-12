@@ -120,7 +120,9 @@ Passing this fixture gate proves only contract-artifact consistency. Runtime imp
 
 `test-shell-safety.sh` rejects dynamic evaluation and missing temporary-state cleanup in Runner shell code. `test-base-dependencies.sh` verifies the documented base-owned tools and rejects unapproved duplicate utilities such as `wget` and `jq`.
 
-`test-release-evidence.sh` writes a synthetic, deterministic evidence record and verifies that both a valid record and an invalid mutable image reference are handled correctly. It does not publish an image or create an attestation.
+`test-release-evidence.sh` writes a synthetic, deterministic evidence record and verifies that both a valid record and an invalid mutable image reference are handled correctly. `test-release-identity.sh` verifies that a release manifest binds both runtime image version and revision to the release tag and commit. Neither test publishes an image or creates an attestation.
+
+`test-dockerfile-structure.py` rejects unpinned base-image references, permissive Dockerfile primitives, runtime build arguments, and a root final user before an image is built.
 
 The shared `run-base-tests.sh` sequence is the only base release invariant. It is used by Make, CI, and the release workflow. `test-domain.sh` remains a template for derived repositories and is not part of base test success.
 
@@ -189,6 +191,7 @@ Exact output formatting is intentionally not tested.
 * invalid plugin command names fail explicitly before lookup
 * no command guessing or forwarding occurs
 * effective UID `0` is rejected even if the container runtime overrides the image user
+* a caller-provided `PATH` cannot replace the dispatcher interpreter or root guard
 
 Negative tests are **first-class contract guards**
 and are as important as positive tests.
@@ -208,6 +211,7 @@ and are as important as positive tests.
 * valid metadata is accepted as literal `KEY=VALUE` data
 * invalid syntax fails with deterministic diagnostics
 * shell markers and control operators are rejected without execution
+* contract failures selected by `info --format json` produce a JSON error object
 
 ---
 
@@ -225,6 +229,12 @@ and are as important as positive tests.
 * identity is exposed via `runner info --format text|json`
 
 Exact formatting is intentionally not validated.
+
+### Hardened Runtime Tests (`test-hardened-runtime.sh`)
+
+The documented read-only, no-capability, `no-new-privileges`, non-root runtime
+envelope must still execute `runner info --format json`. This protects the
+runtime hardening guidance from drifting away from the actual image.
 
 ---
 

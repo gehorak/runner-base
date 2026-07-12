@@ -99,5 +99,21 @@ expect_exit 1 docker build --build-arg "BASE_IMAGE=${IMAGE}" -f "${FIXTURE_DIR}/
 docker build --build-arg "BASE_IMAGE=${IMAGE}" -f "${FIXTURE_DIR}/Dockerfile.invalid-runtime" -t "${INVALID_RUNTIME_IMAGE}" "${FIXTURE_DIR}"
 expect_exit 3 docker run --rm "${INVALID_RUNTIME_IMAGE}" info >"${TMP_DIR}/invalid.out" 2>"${TMP_DIR}/invalid.err"
 grep -F 'RUNNER_E_CONTRACT' "${TMP_DIR}/invalid.err" >/dev/null
+expect_exit 3 docker run --rm "${INVALID_RUNTIME_IMAGE}" info --format json >"${TMP_DIR}/invalid-json.out" 2>"${TMP_DIR}/invalid-json.err"
+"${PYTHON}" - "${TMP_DIR}/invalid-json.err" <<'PY'
+import json
+import pathlib
+import sys
+
+value = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert value == {
+    "schema_version": 1,
+    "error": {
+        "id": "RUNNER_E_CONTRACT",
+        "message": "Required Runner metadata is missing or invalid.",
+        "hint": "Rebuild the image from valid declarative Runner metadata.",
+    },
+}
+PY
 
 echo "==> v0.3 canonical dispatcher tests passed"

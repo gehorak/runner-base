@@ -5,4 +5,4 @@ USER root
 COPY image.manifest /tmp/image.manifest
 RUN printf '\nRUNNER_TOOL_NAMES=about\nRUNNER_TOOL_ABOUT_VERSION=1.0.0\nRUNNER_TOOL_ABOUT_EXECUTABLE=/usr/local/bin/about\nRUNNER_TOOL_ABOUT_ALIASES=\n' >> /tmp/image.manifest \
  && . /usr/local/lib/runner/metadata.sh \
- && runner_metadata_materialize_manifest /tmp/image.manifest
+ && runner_metadata_materialize_derived_manifest /tmp/image.manifest

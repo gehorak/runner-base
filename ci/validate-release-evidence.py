@@ -40,6 +40,8 @@ def validate(document: dict[str, Any]) -> None:
     require(string_at(document, "source", "repository") == "gehorak/runner-base", "unexpected source.repository")
     require(string_at(document, "image", "candidate_reference") == "runner-release:test", "unexpected candidate reference")
     require(SHA256.fullmatch(string_at(document, "image", "candidate_image_id")) is not None, "candidate image ID must be sha256")
+    require(string_at(document, "image", "manifest_version") == source_tag[1:], "manifest version must match source.tag")
+    require(string_at(document, "image", "manifest_revision") == string_at(document, "source", "commit"), "manifest revision must match source.commit")
     published_reference = string_at(document, "image", "published_reference")
     require(PUBLISHED_REFERENCE.fullmatch(published_reference) is not None, "published reference must be the release SemVer reference")
     require(published_reference.endswith(f":{source_tag[1:]}"), "published reference must match source.tag")

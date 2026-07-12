@@ -13,10 +13,11 @@ The Debian parent image is pinned by digest. APT package versions are not indivi
 ## Release procedure
 
 1. A reviewed SemVer tag on `main` triggers the release workflow.
-2. The workflow builds one `linux/amd64` candidate image and runs the complete base-owned test sequence.
-3. It generates an SPDX JSON SBOM for that tested candidate.
-4. It publishes the same tested local image under fixed SemVer, minor-line, and convenience `latest` tags.
-5. It resolves the published digest, records the previous rollback digest, generates keyless provenance and SBOM attestations, and publishes the evidence and SBOM as GitHub Release assets.
+2. The workflow writes an isolated build-context manifest whose `RUNNER_VERSION` and `RUNNER_IMAGE_VERSION` equal the tag and whose `RUNNER_IMAGE_REVISION` equals the tagged commit.
+3. The workflow builds one `linux/amd64` candidate image and runs the complete base-owned test sequence.
+4. It generates an SPDX JSON SBOM for that tested candidate.
+5. It publishes the same tested local image under fixed SemVer, minor-line, and convenience `latest` tags.
+6. It resolves the published digest, records the immediately preceding lower strict-SemVer rollback digest, generates keyless provenance and SBOM attestations, and publishes the evidence and SBOM as GitHub Release assets.
 
 The GitHub Release and its public evidence assets are created only after the rollback digest, SBOM, provenance, and machine-readable evidence are available. A registry publication has to precede digest-bound attestation; if a later evidence or attestation step fails, maintainers must investigate and, when the image cannot be completed, mark the published version as yanked rather than silently retrying or replacing its tag.
 

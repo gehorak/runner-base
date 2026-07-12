@@ -299,18 +299,29 @@ runner_metadata_validate_runtime_contract() {
 
   runner_metadata_load_map "$image_file" image || return 1
   runner_metadata_load_map "$runtime_file" runtime || return 1
-  for key in RUNNER_IMAGE RUNNER_DOMAIN RUNNER_ROLE RUNNER_VERSION RUNNER_CONTRACT_VERSION RUNNER_IMAGE_VERSION RUNNER_SUPPORTED_PLATFORM; do
+  for key in RUNNER_IMAGE RUNNER_DOMAIN RUNNER_ROLE RUNNER_VERSION RUNNER_CONTRACT_VERSION RUNNER_IMAGE_VERSION RUNNER_IMAGE_REVISION RUNNER_SUPPORTED_PLATFORM; do
     [[ -n "${image[$key]:-}" ]] || {
       runner_metadata_contract_error "missing ${key}"
       return 1
     }
   done
   [[ "${image[RUNNER_VERSION]}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || runner_metadata_contract_error "invalid RUNNER_VERSION" || return 1
+  [[ "${image[RUNNER_IMAGE_VERSION]}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || runner_metadata_contract_error "invalid RUNNER_IMAGE_VERSION" || return 1
+  [[ "${image[RUNNER_IMAGE_REVISION]}" == "local" || "${image[RUNNER_IMAGE_REVISION]}" =~ ^[0-9a-f]{40}$ ]] || runner_metadata_contract_error "invalid RUNNER_IMAGE_REVISION" || return 1
   [[ "${image[RUNNER_CONTRACT_VERSION]}" == "v001" ]] || runner_metadata_contract_error "unsupported RUNNER_CONTRACT_VERSION" || return 1
   [[ "${image[RUNNER_SUPPORTED_PLATFORM]}" == "linux/amd64" ]] || runner_metadata_contract_error "unsupported RUNNER_SUPPORTED_PLATFORM" || return 1
   for key in RUNTIME_USER_NAME RUNTIME_USER_UID RUNTIME_USER_GID RUNTIME_USER_HOME RUNTIME_SHELL RUNTIME_WORKDIR; do
     [[ -n "${runtime[$key]:-}" ]] || {
       runner_metadata_contract_error "missing ${key}"
+      return 1
+    }
+  done
+  [[ "${runtime[RUNTIME_USER_NAME]}" =~ ^[a-z_][a-z0-9_-]*$ ]] || runner_metadata_contract_error "invalid RUNTIME_USER_NAME" || return 1
+  [[ "${runtime[RUNTIME_USER_UID]}" =~ ^[1-9][0-9]*$ ]] || runner_metadata_contract_error "invalid RUNTIME_USER_UID" || return 1
+  [[ "${runtime[RUNTIME_USER_GID]}" =~ ^[1-9][0-9]*$ ]] || runner_metadata_contract_error "invalid RUNTIME_USER_GID" || return 1
+  for key in RUNTIME_USER_HOME RUNTIME_SHELL RUNTIME_WORKDIR; do
+    [[ "${runtime[$key]}" == /* && "${runtime[$key]}" != *[[:space:]]* ]] || {
+      runner_metadata_contract_error "invalid ${key}"
       return 1
     }
   done
@@ -333,5 +344,53 @@ runner_metadata_materialize_manifest() {
   grep '^RUNTIME_' "$manifest" >/etc/runner/runtime.env
   { grep '^RUNNER_TOOL_' "$manifest" >/etc/runner/tools.env || [[ $? -eq 1 ]]; }
   runner_metadata_validate_runtime_contract /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env || return 1
+  chmod 0444 /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env
+}
+
+# A derived image supplies only its image identity and tool declarations. The
+# base keeps Runner version, contract version, platform, and runtime-user
+# metadata authoritative so a derived manifest cannot drift from its parent.
+runner_metadata_validate_derived_manifest() {
+  local manifest="$1"
+  local key=""
+  local -A overlay=()
+
+  runner_metadata_load_map "$manifest" overlay || return 1
+  for key in "${!overlay[@]}"; do
+    case "$key" in
+      RUNNER_IMAGE | RUNNER_DOMAIN | RUNNER_ROLE | RUNNER_IMAGE_VERSION | RUNNER_IMAGE_REVISION | RUNNER_DESCRIPTION | RUNNER_VENDOR | RUNNER_LICENSE | RUNNER_REPOSITORY | RUNNER_TOOL_*) ;;
+      *)
+        runner_metadata_contract_error "derived manifest cannot override ${key}"
+        return 1
+        ;;
+    esac
+  done
+  for key in RUNNER_IMAGE RUNNER_DOMAIN RUNNER_ROLE RUNNER_IMAGE_VERSION RUNNER_IMAGE_REVISION RUNNER_TOOL_NAMES; do
+    if [[ "$key" == "RUNNER_TOOL_NAMES" ]]; then
+      [[ -v "overlay[$key]" ]] || {
+        runner_metadata_contract_error "derived manifest is missing ${key}"
+        return 1
+      }
+      continue
+    fi
+    [[ -n "${overlay[$key]:-}" ]] || {
+      runner_metadata_contract_error "derived manifest is missing ${key}"
+      return 1
+    }
+  done
+}
+
+runner_metadata_materialize_derived_manifest() {
+  local manifest="$1"
+  local image_tmp="/tmp/runner-derived-image.env"
+  local tools_tmp="/tmp/runner-derived-tools.env"
+
+  runner_metadata_validate_derived_manifest "$manifest" || return 1
+  grep -v -E '^RUNNER_(IMAGE|DOMAIN|ROLE|IMAGE_VERSION|IMAGE_REVISION|DESCRIPTION|VENDOR|LICENSE|REPOSITORY|TOOL_)' /etc/runner/image.env >"${image_tmp}"
+  grep '^RUNNER_' "$manifest" | grep -v '^RUNNER_TOOL_' >>"${image_tmp}"
+  grep '^RUNNER_TOOL_' "$manifest" >"${tools_tmp}"
+  runner_metadata_validate_runtime_contract "${image_tmp}" /etc/runner/runtime.env "${tools_tmp}" || return 1
+  mv "${image_tmp}" /etc/runner/image.env
+  mv "${tools_tmp}" /etc/runner/tools.env
   chmod 0444 /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env
 }

@@ -1,69 +1,8 @@
-# =============================================================================
-# .dockerignore — Docker build context hygiene
-#
-# PURPOSE
-# -------
-# Minimize Docker build context size and prevent
-# accidental inclusion of local or sensitive files.
-#
-# This file mirrors .gitignore where appropriate,
-# but never excludes runtime-critical files.
-# =============================================================================
-
-
-# -----------------------------------------------------------------------------
-# Version control & editor files
-# -----------------------------------------------------------------------------
-.git
-.gitignore
-.gitattributes
-.editorconfig
-
-.idea
-.vscode
-.vs
-.agents
-.codex
-*.swp
-*.swo
-*~
-
-
-# -----------------------------------------------------------------------------
-# Local environment & secrets
-# -----------------------------------------------------------------------------
-.env
-.env.*
-*.key
-*.pem
-*.crt
-secrets*.yml
-secrets*.yaml
-
-
-# -----------------------------------------------------------------------------
-# Build artifacts
-# -----------------------------------------------------------------------------
-dist
-build
-coverage
-target
-out
-
-
-# -----------------------------------------------------------------------------
-# Language-specific artifacts
-# -----------------------------------------------------------------------------
-node_modules
-__pycache__
-*.pyc
-.venv
-venv
-
-
-# -----------------------------------------------------------------------------
-# CI / temporary files
-# -----------------------------------------------------------------------------
-.cache
-.tmp
-.retry
+# Docker build context allowlist. The base image needs only its build recipe,
+# dispatcher, metadata parser, and declarative manifest; tests and local state
+# must never be transferred into the image build context.
+*
+!Dockerfile
+!image.manifest
+!runner
+!runner-metadata.sh

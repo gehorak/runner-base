@@ -22,7 +22,7 @@ Derived images must not replace the entrypoint, parser, runtime user model, meta
 
 ## Tool declaration and tests
 
-Use canonical tool names in `RUNNER_TOOL_NAMES`, lexical ordering, explicit executable bindings, and optional lexical bridge aliases. A derived image must copy its complete manifest and run the base-owned `runner_metadata_materialize_manifest` during its build. It owns tests for every provided domain tool, including `runner tool <name>`, declared aliases, expected failure behavior, and the parent base digest.
+Use canonical tool names in `RUNNER_TOOL_NAMES`, lexical ordering, explicit executable bindings, and optional lexical bridge aliases. A derived image supplies an overlay manifest containing only its identity and `RUNNER_TOOL_*` declarations, then runs the base-owned `runner_metadata_materialize_derived_manifest` during its build. Runner version, contract version, supported platform, and runtime-user fields remain materialized from the parent and cannot be overridden. It owns tests for every provided domain tool, including `runner tool <name>`, declared aliases, expected failure behavior, and the parent base digest.
 
 ## Compatibility and upgrades
 

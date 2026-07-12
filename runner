@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # =============================================================================
 # runner — v0.3.0 compatibility-bridge dispatcher
@@ -19,6 +19,11 @@
 
 set -Eeuo pipefail
 
+# Do not trust a caller-provided PATH for Runner-owned commands. The absolute
+# shebang and EUID guard below run before metadata loading or child dispatch.
+readonly RUNNER_SYSTEM_PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export PATH="${RUNNER_SYSTEM_PATH}"
+
 # =============================================================================
 # Fixed platform locations (CONTRACT)
 # =============================================================================
@@ -38,7 +43,14 @@ runner_error() {
   local hint="$3"
   local code="$4"
 
-  printf '%s: %s\nHint: %s\n' "$identifier" "$message" "$hint" >&2
+  if [[ "${RUNNER_ERROR_FORMAT:-text}" == "json" ]]; then
+    printf '{"schema_version":1,"error":{"id":"%s","message":"%s","hint":"%s"}}\n' \
+      "$(runner_json_string "$identifier")" \
+      "$(runner_json_string "$message")" \
+      "$(runner_json_string "$hint")" >&2
+  else
+    printf '%s: %s\nHint: %s\n' "$identifier" "$message" "$hint" >&2
+  fi
   exit "$code"
 }
 
@@ -312,6 +324,18 @@ runner_shell() {
   exec "$RUNTIME_SHELL"
 }
 
+# The materialized metadata describes the process that is already executing.
+# Reject any derived-image drift between declared identity and actual UID/GID,
+# user, HOME, workdir, or configured shell before dispatching a command.
+runner_validate_runtime_environment() {
+  [[ "$(/usr/bin/id -u)" == "${RUNTIME_USER_UID}" ]] || return 1
+  [[ "$(/usr/bin/id -g)" == "${RUNTIME_USER_GID}" ]] || return 1
+  [[ "$(/usr/bin/id -un)" == "${RUNTIME_USER_NAME}" ]] || return 1
+  [[ "${HOME}" == "${RUNTIME_USER_HOME}" ]] || return 1
+  [[ "${PWD}" == "${RUNTIME_WORKDIR}" ]] || return 1
+  [[ -x "${RUNTIME_SHELL}" ]] || return 1
+}
+
 # =============================================================================
 # Runtime contract loading (READ-ONLY)
 #
@@ -319,6 +343,14 @@ runner_shell() {
 # parsed and validated as literal data before any Runner command is dispatched.
 # =============================================================================
 
+# Select JSON diagnostics before metadata validation, because metadata commands
+# may fail before their normal argument parser can run.
+RUNNER_ERROR_FORMAT=text
+if [[ "${1:-}" == "info" && "${2:-}" == "--format" && "${3:-}" == "json" && $# -eq 3 ]]; then
+  RUNNER_ERROR_FORMAT=json
+fi
+
+[[ "${EUID}" -ne 0 ]] || runner_error RUNNER_E_ROOT "runner must not run as root" "Run the image with its declared non-root user." 2
 [[ -f "$IMAGE_ENV" && -f "$RUNTIME_ENV" && -f "$TOOLS_ENV" && -f "$METADATA_LIB" ]] || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 
 # METADATA_LIB is a fixed trusted parser path. Image metadata are parsed as data.
@@ -328,8 +360,7 @@ runner_metadata_validate_runtime_contract "$IMAGE_ENV" "$RUNTIME_ENV" "$TOOLS_EN
 runner_metadata_export_file "$IMAGE_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 runner_metadata_export_file "$RUNTIME_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 runner_metadata_export_file "$TOOLS_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
-
-[[ "$(id -u)" != "0" ]] || runner_error RUNNER_E_ROOT "runner must not run as root" "Run the image with its declared non-root user." 2
+runner_validate_runtime_environment || runner_error RUNNER_E_CONTRACT "Runtime environment does not match declared metadata." "Rebuild the image with a consistent runtime contract." 3
 
 # =============================================================================
 # Main dispatch (DETERMINISTIC)
