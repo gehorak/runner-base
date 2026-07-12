@@ -1,177 +1,157 @@
 # Changelog
-#
-# All notable changes to this project are documented in this file.
-#
-# This project follows:
-# - Keep a Changelog
-# - Semantic Versioning (SemVer)
-#
-# The changelog focuses on externally observable behavior
-# and execution contract changes.
-#
-# Internal refactors that do not affect the execution model
-# may be omitted.
-#
 
----
+All notable changes to this project are documented in this file.
 
-## [Unreleased] - v0.3.0 compatibility bridge
+This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and [Semantic Versioning](https://semver.org/). The changelog focuses on
+externally observable behavior and execution-contract changes; internal
+refactors without execution-model impact may be omitted.
+
+## [0.3.0] - Release preparation
 
 ### Added
-- Canonical `runner --help`, `runner --version`, `runner info`, `runner tool`, `runner exec --`, and `runner shell` dispatcher surface
-- Declarative base-owned tool metadata materialization and a synthetic derived compatibility fixture
-- Runtime JSON metadata, stable Runner-native error identifiers, and v0.3 compatibility tests
-- Versioned `tools.lock` evidence and a pinned derived-conformance interface for future derived repositories
-- Scheduled digest-pinned scanning of the latest published immutable release
+
+- Canonical `runner --help`, `runner --version`, `runner info`, `runner tool`, `runner exec --`, and `runner shell` dispatcher surface.
+- Declarative base-owned tool metadata materialization, runtime JSON metadata, stable Runner-native error identifiers, and v0.3 compatibility tests.
+- Versioned `tools.lock` evidence, a commit-pinned derived-conformance interface, and a scheduled digest-pinned scan of the latest published immutable release.
 
 ### Changed
-- Release-evidence contract now records CLI v001 compatibility-bridge validation
-- Runner startup uses privileged Bash mode, runtime metadata permits workdir overrides, and child processes retain their derived-image PATH.
+
+- Release evidence records CLI v001 compatibility-bridge validation.
+- Runner startup uses privileged Bash mode, supports runtime workdir overrides, and preserves the caller or derived-image PATH for child processes.
 - Derived tools use the declarative registry and explicit executable bindings; runtime plugin-directory discovery is not part of the public model.
-- The derived runtime contract now names shared utilities and workspace, PATH, cache, configuration, temporary-file, and CA responsibilities.
+- The derived runtime contract names shared utilities and workspace, PATH, cache, configuration, temporary-file, and CA responsibilities.
 
 ### Fixed
+
 - JSON contract errors are selected for both `info --format json` and `tool --format json` before metadata validation.
 - Release candidates validate actual runtime image identity, serialize release runs, pin the vulnerability scanner, and record the canonical test list.
 - Parent-owned metadata, dispatcher, and parser files are verified root-owned and non-writable by the runtime user, including a negative derived fixture.
-- Release finalization can resume only when an existing immutable SemVer reference matches the tested candidate configuration digest; convenience aliases are delayed until evidence publication.
+- Release finalization resumes only when an existing immutable SemVer reference matches the tested candidate configuration digest; convenience aliases wait for evidence publication.
 
 ### Notes
-- This is a local release candidate and has not been pushed, tagged, published, or released.
+
+- The release-preparation changes are on `main`; the `v0.3.0` tag, image publication, SBOM, provenance, and release evidence remain separate release actions.
 - `about`, direct `version`, direct declared-tool commands, declared tool-name aliases, and delimiter-free `exec` remain deprecated bridge forms until v1.0.0.
+- No complex real-world derived image has yet been validated; `runner-terraform` remains the planned reference-derived follow-up.
 
----
-
-## [0.2.1] - Local candidate
-
-### Added
-- Strict metadata grammar validation for build-time and runtime contract files
+## [0.2.6] - 2026-07-11
 
 ### Changed
-- Local manifest validation now treats runner metadata as literal `KEY=VALUE` data
-- Runtime metadata contract docs now describe the strict literal metadata grammar
-- Plugin-backed `runner version` output remains a legacy compatibility path in v0.2.x
+
+- Published the v0.2.6 remediation release evidence, SPDX SBOM, and provenance for the exact released image.
+- Documented the frozen CLI v001 target and the v0.2.4 to v0.3.x to v1.0.0 migration boundary.
 
 ### Fixed
-- Removed unsafe `source`-based metadata loading from build-time and runtime metadata paths
-- Rejected invalid plugin command names before filesystem lookup
+
+- Replaced the failing shell-formatting setup action with a pinned upstream `shfmt` release asset verified by SHA-256 before CI linting.
 
 ### Notes
-- This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.1-metadata-hardening`
-- Runtime env files are no longer sourced directly; sourcing the trusted metadata parser library remains intentional
-- Runtime root rejection, explicit `HOME` / `/workspace`, and release-chain hardening remain follow-up work
+
+- This is the latest public v0.2 release. The v0.3.0 compatibility bridge was not part of this release.
+
+## [0.2.4] - 2026-07-10
+
+### Added
+
+- Documented maintenance policy for base digest updates and monthly dependency review.
+
+### Changed
+
+- Pinned the Debian base image by digest and exposed the base digest in OCI metadata.
+- Pinned GitHub Actions workflow dependencies by commit SHA.
+- CI and release contract validation include metadata grammar coverage and the base-image plugin-directory invariant.
+
+### Fixed
+
+- Release publication pushes the same locally tested image artifact instead of rebuilding during publication.
+- The release workflow restores required executable bits before the full contract suite.
+- Local `make release` rejects both staged and unstaged dirty state.
+- Image identity tests no longer false-fail on Windows Git Bash path conversion.
+- The image creates the guaranteed empty `/usr/local/lib/runner.d` plugin directory and verifies the required `RUNNER_ROLE` field.
+
+### Notes
+
+- This public remediation release consolidates the earlier v0.2.1 and v0.2.2 local candidates.
+- v0.3 / CLI v001 implementation remains out of scope for this release.
+
+## [0.2.3] - Tagged local candidate
+
+### Notes
+
+- This tagged candidate captured the v0.2.x hardening series before its public remediation release was issued as v0.2.4.
+- It is retained in the chronological history for auditability; it is not a GitHub Release.
 
 ## [0.2.2] - Local candidate
 
 ### Added
-- Explicit runtime `HOME` and writable default `/workspace` guarantees
+
+- Explicit runtime `HOME` and writable default `/workspace` guarantees.
 
 ### Changed
-- Runtime contract and test coverage now describe writable home/workspace expectations explicitly
+
+- Runtime contract and test coverage describe writable home and workspace expectations explicitly.
 
 ### Fixed
-- Rejected runtime root overrides that would bypass the non-root contract
+
+- Rejected runtime root overrides that would bypass the non-root contract.
 
 ### Notes
-- This entry tracks the local stabilization candidate on `ai/runner-base-v0.2.2-runtime-contract`
-- This candidate builds on `v0.2.1` metadata hardening and keeps release-chain maintenance separate
 
-## [0.2.3] – 2026-07-08
+- This candidate builds on v0.2.1 metadata hardening and keeps release-chain maintenance separate.
+
+## [0.2.1] - Local candidate
 
 ### Added
-- Documented maintenance policy for base digest updates and monthly dependency review
+
+- Strict metadata grammar validation for build-time and runtime contract files.
 
 ### Changed
-- Pinned the Debian base image by digest and exposed the base digest in OCI metadata
-- Pinned GitHub Actions workflow dependencies by commit SHA
-- Refreshed the pinned GitHub Actions workflow dependencies before the public `v0.2.3` tag target
-- CI and release contract validation now include metadata grammar coverage
-- CI, release, and local `make test` now enforce the base-image plugin directory invariant
+
+- Local manifest validation treats runner metadata as literal `KEY=VALUE` data.
+- Runtime metadata documentation describes the strict literal metadata grammar.
+- Plugin-backed `runner version` output remains a legacy compatibility path in v0.2.x.
 
 ### Fixed
-- Release publication now pushes the same locally tested image artifact instead of rebuilding during publish
-- Local `make release` now rejects both staged and unstaged dirty state
-- Image identity tests no longer false-fail on Windows Git Bash path conversion
-- The image now creates the guaranteed empty `/usr/local/lib/runner.d` plugin directory
-- Image identity tests now verify the required `RUNNER_ROLE` field
-- Testing docs now reference the correct plugin test filename
+
+- Removed unsafe `source`-based metadata loading from build-time and runtime metadata paths.
+- Rejected invalid plugin command names before filesystem lookup.
 
 ### Notes
-- This release consolidates the local `v0.2.1` and `v0.2.2` stabilization candidates into a public remediation release
-- The `v0.2.1` and `v0.2.2` entries below were local-only candidates and were not published as release tags
-- The public `v0.2.3` tag is intended for the dedicated release-preparation chore commit that follows the `v0.2.x` hardening series
-- `v3` / `cli contract v001` work remains explicitly out of scope
 
----
+- Runtime environment files are never sourced; sourcing the trusted metadata parser library remains intentional.
 
-## [0.2.0] – 2025-12-30
+## [0.2.0] - 2025-12-30
 
 ### Added
-- Formalized runner platform execution contract
-- Dedicated test suite covering:
-  - smoke behavior
-  - core runner interface
-  - negative (forbidden) execution paths
-  - image identity
-  - plugin minimalism
-- Documented testing strategy (`docs/TESTING.md`)
-- Clear separation between base image and domain images
 
-### Documentation
-- Finalized architecture, contract, and testing documentation
-- Clarified build-time vs runtime boundaries
-- Aligned documentation with enforced test suite
+- Formalized runner platform execution contract and a dedicated smoke, core, negative, identity, and plugin-minimalism test suite.
+- Clear separation between base and domain images.
 
 ### Changed
-- Clarified and hardened runner dispatch behavior
-- Refined execution model to eliminate implicit behavior
-- Improved and stabilized non-root execution guarantees
-- Simplified base image responsibilities
-- Improved documentation clarity and consistency
+
+- Clarified and hardened runner dispatch behavior, non-root execution guarantees, and build-time versus runtime boundaries.
 
 ### Fixed
-- Eliminated ambiguous or implicit command execution paths
-- Removed fragile assumptions around runtime configuration
-- Reduced test brittleness by avoiding output-format coupling
+
+- Eliminated ambiguous or implicit command execution and reduced test brittleness by avoiding output-format coupling.
 
 ### Notes
-- This release focuses on **architectural polish and hardening**
-- No breaking changes were introduced
-- The existing runner CLI contract remains intact
 
----
+- This release focuses on architectural polish and hardening without a breaking CLI change.
 
-## [0.1.0] – 2025-12-25
+## [0.1.0] - 2025-12-25
 
 ### Added
-- Initial public release of `runner-base`
-- Deterministic, bash-based runner entrypoint
-- Explicit CLI execution model
-- Stable set of core commands:
-  - `help`
-  - `about`
-  - `info`
-  - `version`
-  - `exec`
-  - `shell`
-- Non-root runtime user by default
-- Plugin-based extension mechanism (`runner.d`)
-- Immutable image identity defined via `/etc/runner/image.env`
 
-### Changed
-- N/A
-
-### Fixed
-- N/A
+- Initial public `runner-base` release with a deterministic Bash entrypoint, explicit execution model, non-root runtime, plugin-based extension mechanism, and immutable image identity.
 
 ### Notes
-- This release establishes the initial runner execution contract
-- CI workflows are not part of the runtime contract
 
----
+- CI workflows are not part of the runtime contract.
 
 ## Versioning Policy
 
-- **MAJOR** – breaking changes to the execution model or CLI contract
-- **MINOR** – new capabilities or observable behavior extensions
-- **PATCH** – bug fixes, documentation, and internal improvements
+- **MAJOR** — breaking changes to the execution model or CLI contract.
+- **MINOR** — new compatible capabilities or observable behavior extensions.
+- **PATCH** — compatible fixes, documentation, and internal improvements.
