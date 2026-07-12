@@ -151,7 +151,7 @@ EOF
     fail "expected runtime metadata validation to fail"
   fi
 
-  assert_contains "$runtime_err" "/etc/runner/tools.env:1: command substitution '\$()' is not supported"
+  assert_contains "$runtime_err" "RUNNER_E_CONTRACT: Required Runner metadata is missing or invalid."
 
   if docker cp "$runtime_container_id:/tmp/metadata-executed" "${tmpdir}/runtime-marker" >/dev/null 2>&1; then
     fail "runtime metadata executed shell syntax unexpectedly"

@@ -30,7 +30,7 @@ echo
 # -----------------------------------------------------------------------------
 
 echo "==> Plugins: plugin directory exists"
-docker run --rm "${IMAGE}" exec test -d /usr/local/lib/runner.d
+docker run --rm "${IMAGE}" exec -- sh -c 'test -d /usr/local/lib/runner.d'
 
 # -----------------------------------------------------------------------------
 # Test 2: No plugins present in base image
@@ -41,7 +41,7 @@ docker run --rm "${IMAGE}" exec test -d /usr/local/lib/runner.d
 # -----------------------------------------------------------------------------
 
 echo "==> Plugins: no plugins present in base image"
-docker run --rm "${IMAGE}" exec sh -c '[ -z "$(ls -A /usr/local/lib/runner.d)" ]'
+docker run --rm "${IMAGE}" exec -- sh -c '[ -z "$(ls -A /usr/local/lib/runner.d)" ]'
 
 # -----------------------------------------------------------------------------
 # Test completion

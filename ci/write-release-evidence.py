@@ -61,8 +61,8 @@ def main() -> int:
             "parent_digest": values["RUNNER_RELEASE_PARENT_DIGEST"],
         },
         "contract": {
-            "runner_contract_version": "legacy-v0.2",
-            "cli_contract_track": "legacy",
+            "runner_contract_version": "v001",
+            "cli_contract_track": "compatibility-bridge-v0.3",
         },
         "platform": "linux/amd64",
         "tests": tests,

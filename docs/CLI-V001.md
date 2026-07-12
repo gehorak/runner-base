@@ -1,6 +1,6 @@
 # Runner CLI v001 target contract
 
-Status: Target for `runner-base v0.3.0`; not implemented or supported by the current v0.2.x runtime.
+Status: Implemented locally for the `runner-base v0.3.0` compatibility-release candidate; not yet published or released.
 
 ## Release sequence
 
@@ -9,11 +9,11 @@ Status: Target for `runner-base v0.3.0`; not implemented or supported by the cur
 - `v0.3.0` is the first implementation of the compatibility bridge defined here.
 - `v1.0.0` is the hard cutover to the canonical v001 surface.
 
-Publishing this target contract in a v0.2.x source tree does not activate or support v001 runtime behavior.
+The published `v0.2.6` release remains the legacy runtime baseline. This local candidate activates the v001 bridge only when built from this source revision; a public support claim requires its separate release evidence.
 
 ## Purpose
 
-This document defines the contract that must exist before the compatibility-bridge dispatcher is implemented. The current released v0.2.x CLI remains authoritative until a public `v0.3.0` release provides implementation, tests, migration notes, and release evidence.
+This document defines the implemented local compatibility bridge. The released v0.2.x CLI remains authoritative until a public `v0.3.0` release provides implementation evidence, tests, migration notes, and release assets.
 
 ## Canonical surface
 

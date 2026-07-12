@@ -1,12 +1,12 @@
 # Derived-image authoring contract
 
-Status: Normative for images derived from the current legacy v0.2.x base contract.
+Status: Normative for images derived from the local v0.3.0 compatibility-release candidate; public derived adoption remains deferred until base release.
 
 ## What a derived image may add
 
 - declarative identity fields in its build-time `image.manifest`;
-- declarative `TOOL_*` metadata for tools it owns;
-- domain-specific executables and plugins under `/usr/local/lib/runner.d/`;
+- declarative `RUNNER_TOOL_*` metadata for tools it owns;
+- domain-specific executables bound explicitly by `RUNNER_TOOL_<NAME>_EXECUTABLE`;
 - domain documentation, domain tests, and release evidence;
 - a pinned `FROM ghcr.io/gehorak/runner-base:<released-version>@sha256:<published-digest>` reference.
 
@@ -16,13 +16,13 @@ Status: Normative for images derived from the current legacy v0.2.x base contrac
 - the base-owned metadata validator and materialization model;
 - the declared non-root runtime user, `HOME`, and writable workspace contract;
 - the `/etc/runner/*.env` runtime contract files as immutable data;
-- base core command semantics and the empty-by-default base plugin namespace before domain plugins are added.
+- base core command semantics and the empty-by-default base tool registry before domain tools are added.
 
-Derived images must not replace the entrypoint, parser, runtime user model, or current legacy core commands. They must not source metadata as shell code or introduce implicit command forwarding.
+Derived images must not replace the entrypoint, parser, runtime user model, metadata materializer, or canonical commands. They must not source metadata as shell code or introduce implicit command forwarding.
 
 ## Tool declaration and tests
 
-Use canonical tool names in documentation and metadata. A derived image owns tests for every provided domain tool, including an explicit command invocation and expected failure behavior. Base CI protects only base-owned invariants; domain tests are not a base release invariant.
+Use canonical tool names in `RUNNER_TOOL_NAMES`, lexical ordering, explicit executable bindings, and optional lexical bridge aliases. A derived image must copy its complete manifest and run the base-owned `runner_metadata_materialize_manifest` during its build. It owns tests for every provided domain tool, including `runner tool <name>`, declared aliases, expected failure behavior, and the parent base digest.
 
 ## Compatibility and upgrades
 

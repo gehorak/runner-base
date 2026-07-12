@@ -30,7 +30,7 @@ echo
 # -----------------------------------------------------------------------------
 
 echo "==> Identity: /etc/runner/image.env exists and is non-empty"
-docker run --rm "${IMAGE}" exec sh -c 'test -s /etc/runner/image.env'
+docker run --rm "${IMAGE}" exec -- sh -c 'test -s /etc/runner/image.env'
 
 # -----------------------------------------------------------------------------
 # Test 2: image.env contains required keys
@@ -41,12 +41,12 @@ docker run --rm "${IMAGE}" exec sh -c 'test -s /etc/runner/image.env'
 # -----------------------------------------------------------------------------
 
 echo "==> Identity: required keys present in image.env"
-docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_IMAGE=' /etc/runner/image.env"
-docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_DOMAIN=' /etc/runner/image.env"
-docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_ROLE=' /etc/runner/image.env"
+docker run --rm "${IMAGE}" exec -- sh -c "grep -q '^RUNNER_IMAGE=' /etc/runner/image.env"
+docker run --rm "${IMAGE}" exec -- sh -c "grep -q '^RUNNER_DOMAIN=' /etc/runner/image.env"
+docker run --rm "${IMAGE}" exec -- sh -c "grep -q '^RUNNER_ROLE=' /etc/runner/image.env"
 
 # -----------------------------------------------------------------------------
-# Test 3: identity is exposed via 'about'
+# Test 3: identity is exposed via canonical info
 #
 # Verifies:
 # - runner 'about' command exposes image identity
@@ -57,14 +57,14 @@ docker run --rm "${IMAGE}" exec sh -c "grep -q '^RUNNER_ROLE=' /etc/runner/image
 # - Tests MUST be compatible with `set -o pipefail`
 # -----------------------------------------------------------------------------
 
-echo "==> Identity: runner about exposes identity"
+echo "==> Identity: runner info exposes identity"
 
-about_output="$(docker run --rm "${IMAGE}" about)"
+about_output="$(docker run --rm "${IMAGE}" info --format text)"
 
 # Stable contract markers
-echo "${about_output}" | grep -q '^Image identity:'
-echo "${about_output}" | grep -q '^[[:space:]]*Name:'
-echo "${about_output}" | grep -q '^[[:space:]]*Domain:'
+echo "${about_output}" | grep -q '^Image:'
+echo "${about_output}" | grep -q '^Domain:'
+echo "${about_output}" | grep -q '^Role:'
 
 # -----------------------------------------------------------------------------
 # Test completion

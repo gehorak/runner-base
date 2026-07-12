@@ -1,6 +1,6 @@
 # runner-base release evidence
 
-Status: Policy for the unreleased `v0.2.6` stabilization target.
+Status: Release-evidence assets for the local `v0.3.0` compatibility-release candidate. No v0.3.0 release evidence exists until publication is separately authorized.
 
 Every release workflow produces and attaches these public assets to the matching GitHub Release:
 

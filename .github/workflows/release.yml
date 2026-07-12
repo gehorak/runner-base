@@ -334,7 +334,7 @@ jobs:
           RUNNER_RELEASE_PROVENANCE_REFERENCE: ${{ steps.attest-provenance.outputs.attestation-url }}
           RUNNER_RELEASE_PREVIOUS_REFERENCE: ${{ steps.digests.outputs.previous_reference }}
           RUNNER_RELEASE_PREVIOUS_DIGEST: ${{ steps.digests.outputs.previous_digest }}
-          RUNNER_RELEASE_TESTS: cli-v001-contract,test-release-evidence,test-shell-safety,test-metadata-grammar,test-base-dependencies,test-smoke,test-image-identity,test-runner-core,test-negative,test-runner-plugin
+          RUNNER_RELEASE_TESTS: cli-v001-contract,test-release-evidence,test-shell-safety,test-metadata-grammar,test-base-dependencies,test-smoke,test-image-identity,test-runner-core,test-negative,test-runner-plugin,test-runner-v030
         run: |
           set -Eeuo pipefail
           RUNNER_RELEASE_CANDIDATE_IMAGE_ID="$(docker image inspect runner-release:test --format '{{.Id}}')"

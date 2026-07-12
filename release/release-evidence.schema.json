@@ -43,8 +43,8 @@
       "type": "object",
       "required": ["runner_contract_version", "cli_contract_track"],
       "properties": {
-        "runner_contract_version": {"const": "legacy-v0.2"},
-        "cli_contract_track": {"const": "legacy"}
+        "runner_contract_version": {"const": "v001"},
+        "cli_contract_track": {"const": "compatibility-bridge-v0.3"}
       }
     },
     "platform": {"const": "linux/amd64"},

@@ -1,4 +1,4 @@
-# TESTING strategy for runner platform (legacy v0.2.x)
+# TESTING strategy for runner platform (v0.3.0 compatibility bridge)
 
 ## Purpose
 
@@ -102,9 +102,9 @@ and a well-defined scope.
 
 **Purpose**
 
-* validate the future v0.3.0 CLI contract before dispatcher implementation
+* validate the v0.3.0 CLI contract before and alongside dispatcher implementation
 * keep JSON schemas, deterministic examples, human snapshots, and migration behavior cases aligned
-* prove CLI-01 through CLI-03 without changing current v0.2.x runtime behavior
+* prove CLI-01 through CLI-03 against the frozen contract artifacts
 
 **Characteristics**
 
@@ -114,7 +114,7 @@ and a well-defined scope.
 
 **Boundary**
 
-Passing this fixture gate means the target contract is internally reviewable. It does not mean that CLI v001 is implemented, released, or supported by the current image.
+Passing this fixture gate proves only contract-artifact consistency. Runtime implementation and public release status require their separate build and runtime evidence.
 
 ### Shell Safety and Base Dependency Tests
 
@@ -159,11 +159,11 @@ The shared `run-base-tests.sh` sequence is the only base release invariant. It i
 
 **Covered commands**
 
-* `help`
-* `about`
-* `info`
-* `exec`
-* `version`
+* `--help` and `--version`
+* `info --format text|json`
+* `tool` listing and execution
+* `exec --`
+* bridge aliases
 
 **Guarantees**
 
@@ -222,13 +222,13 @@ and are as important as positive tests.
 
 * `/etc/runner/image.env` exists and is non-empty
 * required identity keys are present
-* identity is exposed via `runner about`
+* identity is exposed via `runner info --format text|json`
 
 Exact formatting is intentionally not validated.
 
 ---
 
-### Plugin Tests (`test-runner-plugin.sh`)
+### Base registry tests (`test-runner-plugin.sh`)
 
 **Purpose**
 
@@ -240,8 +240,9 @@ Exact formatting is intentionally not validated.
 * plugin directory exists
 * no domain-specific plugins are present
 
-Derived images MAY extend this test
-to validate their own plugin behavior.
+The synthetic derived compatibility fixture validates declared tool registration,
+aliases, canonical and bridge execution, child exit passthrough, non-executable
+bindings, invalid metadata, and reserved-name collisions.
 
 ---
 
@@ -264,7 +265,7 @@ to validate their own plugin behavior.
 Example:
 
 ```bash
-docker run --rm "${IMAGE}" exec terraform version
+docker run --rm "${IMAGE}" exec -- terraform version
 ```
 
 ---

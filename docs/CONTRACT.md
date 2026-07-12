@@ -1,9 +1,10 @@
-# Runner Platform CONTRACT (legacy v0.2.x)
+# Runner Platform CONTRACT (v0.3.0 compatibility bridge)
 
 ## Purpose
 
 This document defines the **execution and interface contract**
-of the current legacy v0.2.x runner platform.
+of the local v0.3.0 compatibility-release candidate. The published v0.2.6
+release remains the legacy public baseline until v0.3.0 is separately released.
 
 It specifies:
 
@@ -63,11 +64,10 @@ Examples:
 
 ```bash
 # VALID
-docker run --rm <image> help
-docker run --rm <image> exec terraform version
+docker run --rm <image> --help
+docker run --rm <image> exec -- terraform version
 
 # INVALID (MUST fail)
-docker run --rm <image> terraform version
 docker run --rm <image> ls
 ```
 
@@ -91,25 +91,26 @@ Silent fallbacks are explicitly forbidden.
 
 ---
 
-## Core command interface (stable)
+## Canonical command interface
 
 The following commands form the **stable runner core interface**
 and are guaranteed in **all runner images**:
 
-| Command   | Purpose                                     |
-| --------- | ------------------------------------------- |
-| `help`    | Display available commands                  |
-| `about`   | Display image identity                      |
-| `info`    | Display runtime and plugin information      |
-| `exec`    | Execute a system command explicitly         |
-| `shell`   | Start an interactive shell (human use only) |
-| `version` | Display available tool versions             |
+| Command | Purpose |
+| --- | --- |
+| `runner --help` | Display canonical commands and bridge migration context. |
+| `runner --version` | Display Runner and contract versions. |
+| `runner info --format text\|json` | Display image, runtime, and tool metadata. |
+| `runner tool [--format text\|json]` | List declaratively registered tools. |
+| `runner tool <name> [arguments...]` | Transparently execute a registered tool. |
+| `runner exec -- <program> [arguments...]` | Transparently execute an explicit program. |
+| `runner shell` | Start an interactive shell only. |
 
 ### Stability guarantees
 
-* Removing a core command requires a **MAJOR** version bump
-* Changing command semantics requires a **MAJOR** version bump
-* Adding a new core command requires a **MINOR** version bump
+* `about`, direct `version`, direct declared-tool commands, declared aliases, and delimiter-free `exec` are deprecated bridge aliases and are removed only in `v1.0.0`.
+* Runner-native failures use exit codes `2`, `3`, `4`, or `126`; started child processes retain their exit status.
+* JSON is the machine interface; human text output is not a data protocol.
 
 ---
 
@@ -120,7 +121,7 @@ System commands MUST NOT be executed implicitly.
 The **only permitted escape hatch** for executing system commands is:
 
 ```
-runner exec <command> [arguments]
+runner exec -- <command> [arguments]
 ```
 
 This requirement applies uniformly to:
@@ -131,30 +132,24 @@ This requirement applies uniformly to:
 
 ---
 
-## Plugin mechanism
+## Declarative tool registry
 
-### Plugin discovery
+### Tool declaration
 
-Plugins are executable files located in:
-
-```
-/usr/local/lib/runner.d/
-```
-
-The runner discovers plugins explicitly from this directory.
+Derived images declare a lexical `RUNNER_TOOL_NAMES` list plus per-tool version,
+explicit executable binding, and optional aliases. The base validator materializes
+that data into `/etc/runner/tools.env` at build time and validates it defensively
+again at runtime.
 
 ---
 
-### Plugin invocation
+### Tool invocation
 
-* plugins are invoked only by explicit name
-* plugins are never auto-executed
-* plugins MUST NOT override core commands
-* plugin command names MUST match `^[a-z][a-z0-9-]*$`
-* invalid names MUST fail before any plugin filesystem lookup
-
-If a plugin name conflicts with a core command,
-the core command MUST take precedence.
+* tools are invoked only through `runner tool <name>` or a documented bridge alias;
+* directory contents never define the public command surface;
+* tool identities and aliases match `^[a-z][a-z0-9-]*$` and cannot use reserved Runner names;
+* every tool has an explicit executable or transparent adapter binding;
+* unknown direct commands are never forwarded to the system.
 
 ---
 
@@ -209,7 +204,7 @@ Additional keys MAY be present.
 Image identity MUST be exposed via:
 
 ```
-runner about
+runner info --format text
 ```
 
 The exact output formatting is not part of the contract,

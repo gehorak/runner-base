@@ -1,9 +1,10 @@
-# ARCHITECTURE of Runner Platform (legacy v0.2.x)
+# ARCHITECTURE of Runner Platform (v0.3.0 compatibility bridge)
 
 ## Purpose
 
 This document describes the **architectural principles, structure,
-and invariants** of the current legacy **v0.2.x** runner platform.
+and invariants** of the local **v0.3.0 compatibility-release candidate**. The
+published v0.2.6 image remains the legacy public baseline until v0.3.0 release.
 
 It explains:
 
@@ -307,15 +308,16 @@ Undocumented architectural changes are considered defects.
 
 ---
 
-## Architectural invariants (legacy v0.2.x)
+## Architectural invariants (v0.3.0 bridge)
 
-The following invariants define the current legacy v0.2.x runner platform:
+The following invariants define the v0.3.0 bridge:
 
 * single explicit entrypoint
 * layered responsibility separation
 * no implicit command execution
 * non-root execution model
-* explicit plugin mechanism
+* declarative base-owned tool registry and materializer
+* one canonical dispatcher path with deprecated alias normalization
 * immutable image identity
 
 Any violation of these invariants is a bug.

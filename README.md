@@ -13,7 +13,7 @@ The image follows a **strict execution model** focused on:
 This repository is the **base component of the runner tooling platform**.
 All domain-specific runner images are built on top of this image.
 
-Current observed public release: `v0.2.4`. The local `v0.2.6` work is an unreleased legacy stabilization target; the CLI v001 document is a future v0.3.0 target, not current runtime behavior.
+Current published release: `v0.2.6`. This source tree is a local `v0.3.0` compatibility-release candidate: the canonical CLI v001 surface is implemented, while the frozen legacy forms remain deprecated bridge aliases. It is not published or released by this source state.
 
 ---
 
@@ -94,23 +94,11 @@ The image exposes a **single command-line interface**:
 
 ### Core commands (available in all runner images)
 
-* `help`
-  Show available commands
-
-* `about`
-  Show image identity
-
-* `info`
-  Display runtime and plugin information
-
-* `exec`
-  Execute a system command explicitly
-
-* `shell`
-  Start an interactive shell (human use only)
-
-* `version`
-  Show available tool versions
+* `runner --help` and `runner --version`
+* `runner info --format text|json`
+* `runner tool [--format text|json]` and `runner tool <name> [arguments...]`
+* `runner exec -- <program> [arguments...]`
+* `runner shell` for interactive human debugging
 
 These commands form the **stable runner contract**
 and are guaranteed across all runner images.
@@ -119,8 +107,7 @@ and are guaranteed across all runner images.
 
 ### Plugin commands
 
-Additional commands may be provided
-by image-specific runner plugins.
+Derived images register declarative tool metadata; direct tool commands are deprecated bridge aliases only.
 
 Available plugins can be listed using:
 
@@ -150,9 +137,9 @@ Docker and a **bash-capable environment**.
 Example:
 
 ```bash
-docker run --rm runner-base help
-docker run --rm runner-base about
-docker run --rm runner-base info
+docker run --rm runner-base --help
+docker run --rm runner-base info --format json
+docker run --rm runner-base exec -- id
 ```
 
 ---

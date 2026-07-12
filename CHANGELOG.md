@@ -15,22 +15,19 @@
 
 ---
 
-## [Unreleased] - v0.2.6 stabilization target
+## [Unreleased] - v0.3.0 compatibility bridge
 
 ### Added
-- Public security, usage, derived-image, troubleshooting, and release/rollback documentation
-- Shared base-owned test sequence, shell-safety test, dependency inventory test, and CI shell linting
-- Versioned CLI v001 target schemas, fixtures, and offline contract validation without runtime activation
-- Machine-readable release-evidence schema, SBOM, and keyless-attestation workflow design
+- Canonical `runner --help`, `runner --version`, `runner info`, `runner tool`, `runner exec --`, and `runner shell` dispatcher surface
+- Declarative base-owned tool metadata materialization and a synthetic derived compatibility fixture
+- Runtime JSON metadata, stable Runner-native error identifiers, and v0.3 compatibility tests
 
 ### Changed
-- Declared `linux/amd64` as the only supported platform
-- Removed duplicate `wget` from the base dependency inventory
-- Aligned Make, CI, and release validation around the same base-owned tests
+- Release-evidence contract now records CLI v001 compatibility-bridge validation
 
 ### Notes
-- This is an unreleased stabilization target. It preserves the current legacy v0.2.x command surface.
-- `v0.3.0` dispatcher implementation remains a separate future authorization.
+- This is a local release candidate and has not been pushed, tagged, published, or released.
+- `about`, direct `version`, direct declared-tool commands, declared tool-name aliases, and delimiter-free `exec` remain deprecated bridge forms until v1.0.0.
 
 ---
 

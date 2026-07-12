@@ -20,7 +20,8 @@ for test_script in \
   ci/test-image-identity.sh \
   ci/test-runner-core.sh \
   ci/test-negative.sh \
-  ci/test-runner-plugin.sh; do
+  ci/test-runner-plugin.sh \
+  ci/test-runner-v030.sh; do
   bash "${ROOT_DIR}/${test_script}"
 done
 

@@ -32,6 +32,10 @@ MANIFEST_SCHEMA_VERSION=1
 # -----------------------------------------------------------------------------
 
 RUNNER_PLATFORM=runner
+RUNNER_VERSION=0.3.0
+RUNNER_CONTRACT_VERSION=v001
+RUNNER_IMAGE_VERSION=0.3.0
+RUNNER_SUPPORTED_PLATFORM=linux/amd64
 
 
 # -----------------------------------------------------------------------------
@@ -65,6 +69,9 @@ RUNNER_DESCRIPTION=Deterministic runner base image
 RUNNER_VENDOR=gehorak
 RUNNER_LICENSE=MIT
 RUNNER_REPOSITORY=https://github.com/gehorak/runner-base
+RUNNER_IMAGE_REVISION=local
+
+RUNNER_TOOL_NAMES=
 
 
 # -----------------------------------------------------------------------------

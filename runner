@@ -1,221 +1,317 @@
 #!/usr/bin/env bash
-# =============================================================================
-# runner — deterministic command dispatcher
-#
-# PURPOSE
-# -------
-# Single entrypoint for all runner-based images.
-#
-# DESIGN PRINCIPLES
-# -----------------
-# - Explicit behavior (no guessing, no fallbacks)
-# - Deterministic dispatch (1 command → 1 plugin)
-# - Manifest- and contract-driven
-# - Readable and auditable over many years
-#
-# ARCHITECTURE
-# ------------
-# - runner      → command dispatcher
-# - runner.d/*  → single-purpose plugins (1 tool = 1 plugin)
-#
-# Plugins NEVER self-dispatch.
-# Plugins NEVER receive the command name.
-#
-# =============================================================================
 
 set -Eeuo pipefail
 
-# =============================================================================
-# Fixed platform locations (CONTRACT)
-# =============================================================================
-
-readonly PLUGIN_DIR="/usr/local/lib/runner.d"
 readonly METADATA_LIB="/usr/local/lib/runner/metadata.sh"
-
 readonly IMAGE_ENV="/etc/runner/image.env"
 readonly RUNTIME_ENV="/etc/runner/runtime.env"
 readonly TOOLS_ENV="/etc/runner/tools.env"
 
-# =============================================================================
-# Helpers
-# =============================================================================
+runner_error() {
+  local identifier="$1"
+  local message="$2"
+  local hint="$3"
+  local code="$4"
 
-die() {
-  echo "ERROR: $*" >&2
-  exit 1
+  printf '%s: %s\nHint: %s\n' "$identifier" "$message" "$hint" >&2
+  exit "$code"
 }
 
-heading() {
-  echo "$1:"
+runner_deprecation() {
+  printf "DEPRECATED: %s\n" "$1" >&2
 }
 
-indent() {
-  sed 's/^/  /'
+runner_json_string() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' -e 's/\r/\\r/g' -e 's/\n/\\n/g'
 }
 
-runner_validate_plugin_name() {
-  [[ "$1" =~ ^[a-z][a-z0-9-]*$ ]]
+runner_json_tool() {
+  local name="$1"
+  local key=""
+  local aliases_var=""
+  local version_var=""
+  local aliases=""
+  local alias=""
+  local first=1
+  local IFS=','
+
+  key="$(runner_metadata_tool_key "$name")"
+  aliases_var="RUNNER_TOOL_${key}_ALIASES"
+  version_var="RUNNER_TOOL_${key}_VERSION"
+  aliases="${!aliases_var-}"
+  printf '{"name":"%s","version":"%s","aliases":[' \
+    "$(runner_json_string "$name")" \
+    "$(runner_json_string "${!version_var}")"
+  for alias in $aliases; do
+    if [[ $first -eq 0 ]]; then
+      printf ','
+    fi
+    printf '"%s"' "$(runner_json_string "$alias")"
+    first=0
+  done
+  printf ']}'
 }
 
-# =============================================================================
-# Load runtime contracts (READ-ONLY)
-# =============================================================================
+runner_json_tools() {
+  local name=""
+  local first=1
+  local IFS=','
 
-[[ -f "$IMAGE_ENV" ]] || die "missing image contract (${IMAGE_ENV})"
-[[ -f "$RUNTIME_ENV" ]] || die "missing runtime contract (${RUNTIME_ENV})"
-[[ -f "$METADATA_LIB" ]] || die "missing metadata parser (${METADATA_LIB})"
-
-# Source only the trusted parser library. Materialized metadata stay data-only.
-# shellcheck disable=SC1090,SC1091
-# METADATA_LIB is a fixed trusted parser path, not untrusted metadata.
-source "$METADATA_LIB"
-
-runner_metadata_export_file "$IMAGE_ENV" || exit 1
-runner_metadata_export_file "$RUNTIME_ENV" || exit 1
-
-# Optional tools metadata
-if [[ -f "$TOOLS_ENV" ]]; then
-  runner_metadata_export_file "$TOOLS_ENV" || exit 1
-fi
-
-[[ "$(id -u)" != "0" ]] || die "runner must not run as root (uid 0)"
-
-# =============================================================================
-# Core commands (BUILT-IN)
-# =============================================================================
+  printf '['
+  for name in $RUNNER_TOOL_NAMES; do
+    if [[ $first -eq 0 ]]; then
+      printf ','
+    fi
+    runner_json_tool "$name"
+    first=0
+  done
+  printf ']'
+}
 
 runner_help() {
-  heading " RUNNER - command dispatcher"
   cat <<'EOF'
-
 Usage:
-  <image> <command> [arguments]
+  runner --help
+  runner --version
+  runner info [--format text|json]
+  runner tool [--format text|json]
+  runner tool <name> [arguments...]
+  runner exec -- <program> [arguments...]
+  runner shell
 
-Core commands:
-  help            Show this help
-  about           Show image identity
-  info            Show runtime environment and tools
-  version         Show provided tool versions
-  exec <cmd>      Execute command explicitly
-  shell           Start interactive shell (human use only)
+Commands:
+  info     Show Runner, image, runtime, and tool metadata.
+  tool     List tools or invoke one by canonical name.
+  exec     Execute an explicit program after the required -- delimiter.
+  shell    Start an interactive shell for human debugging.
 
-Notes:
-- Commands must be explicit
-- No implicit shell or fallback execution
-- Additional commands are provided by image-specific plugins
+Migration:
+  Legacy v0.2.x forms are deprecated bridge aliases and will be removed in v1.0.0.
 EOF
 }
 
-runner_about() {
-  heading "Image identity"
-  cat <<EOF | indent
-Name:        ${RUNNER_IMAGE}
-Domain:      ${RUNNER_DOMAIN}
-Role:        ${RUNNER_ROLE}
-Description: ${RUNNER_DESCRIPTION}
-Vendor:      ${RUNNER_VENDOR}
-Repository:  ${RUNNER_REPOSITORY}
-EOF
+runner_version() {
+  printf 'runner %s (contract %s)\n' "$RUNNER_VERSION" "$RUNNER_CONTRACT_VERSION"
+}
+
+runner_info_json() {
+  printf '{"schema_version":1,"runner":{"name":"runner","version":"%s","contract_version":"%s"},' \
+    "$(runner_json_string "$RUNNER_VERSION")" \
+    "$(runner_json_string "$RUNNER_CONTRACT_VERSION")"
+  printf '"image":{"name":"%s","version":"%s","domain":"%s","role":"%s","revision":"%s"},' \
+    "$(runner_json_string "$RUNNER_IMAGE")" \
+    "$(runner_json_string "$RUNNER_IMAGE_VERSION")" \
+    "$(runner_json_string "$RUNNER_DOMAIN")" \
+    "$(runner_json_string "$RUNNER_ROLE")" \
+    "$(runner_json_string "$RUNNER_IMAGE_REVISION")"
+  printf '"runtime":{"platform":"linux","architecture":"amd64","user":"%s","home":"%s","workdir":"%s","shell":"%s"},"tools":' \
+    "$(runner_json_string "$RUNTIME_USER_NAME")" \
+    "$(runner_json_string "$RUNTIME_USER_HOME")" \
+    "$(runner_json_string "$RUNTIME_WORKDIR")" \
+    "$(runner_json_string "$RUNTIME_SHELL")"
+  runner_json_tools
+  printf '}\n'
+}
+
+runner_info_text() {
+  local name=""
+  local key=""
+  local version_var=""
+  local IFS=','
+
+  printf 'Runner: runner %s (contract %s)\n' "$RUNNER_VERSION" "$RUNNER_CONTRACT_VERSION"
+  printf 'Image: %s %s\n' "$RUNNER_IMAGE" "$RUNNER_IMAGE_VERSION"
+  printf 'Domain: %s\n' "$RUNNER_DOMAIN"
+  printf 'Role: %s\n' "$RUNNER_ROLE"
+  printf 'Runtime: %s\n' "$RUNNER_SUPPORTED_PLATFORM"
+  printf 'User: %s\n' "$RUNTIME_USER_NAME"
+  printf 'Home: %s\n' "$RUNTIME_USER_HOME"
+  printf 'Workdir: %s\n' "$RUNTIME_WORKDIR"
+  printf 'Shell: %s\n' "$RUNTIME_SHELL"
+  printf 'Tools:'
+  for name in $RUNNER_TOOL_NAMES; do
+    key="$(runner_metadata_tool_key "$name")"
+    version_var="RUNNER_TOOL_${key}_VERSION"
+    printf ' %s %s' "$name" "${!version_var}"
+  done
+  printf '\n'
+}
+
+runner_parse_format() {
+  local default="$1"
+  shift
+  RUNNER_REQUESTED_FORMAT="$default"
+  RUNNER_FORMAT_INPUT=""
+
+  [[ $# -eq 0 ]] && return 0
+  [[ $# -eq 2 && "$1" == "--format" ]] || return 1
+  RUNNER_FORMAT_INPUT="$2"
+  case "$2" in
+    text|json)
+      RUNNER_REQUESTED_FORMAT="$2"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 runner_info() {
-  heading "Image identity"
-  cat <<EOF | indent
-Name:   ${RUNNER_IMAGE}
-Domain: ${RUNNER_DOMAIN}
-Role:   ${RUNNER_ROLE}
-EOF
+  runner_parse_format text "$@" || runner_error RUNNER_E_FORMAT "Unsupported format: ${RUNNER_FORMAT_INPUT:-unknown}" "Use '--format text' or '--format json'." 2
+  case "$RUNNER_REQUESTED_FORMAT" in
+    text) runner_info_text ;;
+    json) runner_info_json ;;
+  esac
+}
 
-  echo
-  heading "Runtime contract"
-  cat <<EOF | indent
-User:    ${RUNTIME_USER_NAME} (${RUNTIME_USER_UID}:${RUNTIME_USER_GID})
-Home:    ${RUNTIME_USER_HOME}
-Shell:   ${RUNTIME_SHELL}
-Workdir: ${RUNTIME_WORKDIR}
-EOF
+runner_tool_list() {
+  local name=""
+  local key=""
+  local version_var=""
+  local IFS=','
 
-  echo
-  heading "Runtime state"
-  cat <<EOF | indent
-User:    $(id -un) ($(id -u):$(id -g))
-Home:    ${HOME}
-Shell:   $(command -v "${RUNTIME_SHELL}" 2>/dev/null || echo unknown)
-Workdir: $(pwd)
-EOF
-
-  echo
-  heading "Tools"
-  if [[ -s "$TOOLS_ENV" ]]; then
-    sed 's/^/  /' "$TOOLS_ENV"
-  else
-    echo "  (none)"
+  runner_parse_format text "$@" || runner_error RUNNER_E_FORMAT "Unsupported format: ${RUNNER_FORMAT_INPUT:-unknown}" "Use '--format text' or '--format json'." 2
+  if [[ "$RUNNER_REQUESTED_FORMAT" == "json" ]]; then
+    printf '{"schema_version":1,"tools":'
+    runner_json_tools
+    printf '}\n'
+    return 0
   fi
+  for name in $RUNNER_TOOL_NAMES; do
+    key="$(runner_metadata_tool_key "$name")"
+    version_var="RUNNER_TOOL_${key}_VERSION"
+    printf '%s %s\n' "$name" "${!version_var}"
+  done
+}
 
-  echo
-  heading "Plugins"
-  if [[ -d "$PLUGIN_DIR" ]] && ls "$PLUGIN_DIR"/* >/dev/null 2>&1; then
-    for f in "$PLUGIN_DIR"/*; do
-      [[ -x "$f" ]] || continue
-      echo "  - $(basename "$f")"
+runner_resolve_tool() {
+  local requested="$1"
+  local name=""
+  local key=""
+  local aliases_var=""
+  local alias=""
+  local IFS=','
+
+  for name in $RUNNER_TOOL_NAMES; do
+    [[ "$requested" == "$name" ]] && {
+      printf '%s' "$name"
+      return 0
+    }
+    key="$(runner_metadata_tool_key "$name")"
+    aliases_var="RUNNER_TOOL_${key}_ALIASES"
+    for alias in ${!aliases_var-}; do
+      [[ "$requested" == "$alias" ]] && {
+        printf '%s' "$name"
+        return 0
+      }
     done
-  else
-    echo "  (none)"
+  done
+  return 1
+}
+
+runner_tool_exec() {
+  local requested="${1:-}"
+  local canonical=""
+  local key=""
+  local executable_var=""
+  local executable=""
+
+  [[ -n "$requested" ]] || runner_error RUNNER_E_USAGE "missing tool name" "Use runner tool <name> [arguments...]." 2
+  shift
+  canonical="$(runner_resolve_tool "$requested")" || runner_error RUNNER_E_NOT_FOUND "Unknown tool: ${requested}" "Run 'runner tool --format text' to list available tools." 4
+  if [[ "$requested" != "$canonical" ]]; then
+    runner_deprecation "tool alias '${requested}' will be removed in v1.0.0; use canonical tool name '${canonical}'."
   fi
+  key="$(runner_metadata_tool_key "$canonical")"
+  executable_var="RUNNER_TOOL_${key}_EXECUTABLE"
+  executable="${!executable_var}"
+  [[ -x "$executable" ]] || runner_error RUNNER_E_NOT_EXECUTABLE "Tool is registered but cannot be executed: ${canonical}" "Verify the tool path and executable permissions in the derived image." 126
+  exec "$executable" "$@"
+}
+
+runner_tool() {
+  [[ $# -gt 0 ]] || {
+    runner_tool_list
+    return 0
+  }
+  if [[ "$1" == "--format" ]]; then
+    runner_tool_list "$@"
+    return 0
+  fi
+  runner_tool_exec "$@"
 }
 
 runner_exec() {
-  [[ $# -gt 0 ]] || die "exec requires a command"
+  [[ "${1:-}" == "--" ]] || runner_error RUNNER_E_USAGE "Canonical exec requires '--' followed by a program." "Use 'runner exec -- <program> [arguments...]'." 2
+  shift
+  [[ $# -gt 0 ]] || runner_error RUNNER_E_USAGE "Canonical exec requires '--' followed by a program." "Use 'runner exec -- <program> [arguments...]'." 2
   exec "$@"
 }
 
 runner_shell() {
-  [[ -t 0 ]] || die "shell requires an interactive terminal (use -it)"
-  exec "${RUNTIME_SHELL}"
+  [[ $# -eq 0 ]] || runner_error RUNNER_E_USAGE "shell accepts no arguments" "Use runner shell interactively or runner exec -- for a program." 2
+  [[ -t 0 && -t 1 ]] || runner_error RUNNER_E_SHELL_TTY "shell requires an interactive terminal" "Use docker run -it ... shell." 2
+  exec "$RUNTIME_SHELL"
 }
 
-runner_version() {
-  # Legacy v0.2.x compatibility: allow a plugin-specific version override.
-  local plugin="${PLUGIN_DIR}/version"
+[[ -f "$IMAGE_ENV" && -f "$RUNTIME_ENV" && -f "$TOOLS_ENV" && -f "$METADATA_LIB" ]] || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 
-  if [[ -x "$plugin" ]]; then
-    exec "$plugin"
-  fi
+# METADATA_LIB is a fixed trusted parser path. Image metadata are parsed as data.
+# shellcheck disable=SC1090,SC1091
+source "$METADATA_LIB"
+runner_metadata_validate_runtime_contract "$IMAGE_ENV" "$RUNTIME_ENV" "$TOOLS_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
+runner_metadata_export_file "$IMAGE_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
+runner_metadata_export_file "$RUNTIME_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
+runner_metadata_export_file "$TOOLS_ENV" >/dev/null 2>&1 || runner_error RUNNER_E_CONTRACT "Required Runner metadata is missing or invalid." "Rebuild the image from valid declarative Runner metadata." 3
 
-  heading "Tool versions"
+[[ "$(id -u)" != "0" ]] || runner_error RUNNER_E_ROOT "runner must not run as root" "Run the image with its declared non-root user." 2
 
-  # Manifest-driven tool versions
-  if [[ -s "$TOOLS_ENV" ]]; then
-    sed 's/^TOOL_//' "$TOOLS_ENV" | grep '_VERSION=' | sort | indent
-    return 0
-  fi
-
-  echo "(no version information provided by this image)" | indent
-  exit 0
-}
-
-# =============================================================================
-# Main dispatch (DETERMINISTIC)
-# =============================================================================
-
-CMD="${1:-help}"
+command="${1:---help}"
 shift || true
 
-case "$CMD" in
-  help) runner_help ;;
-  about) runner_about ;;
-  info) runner_info ;;
-  exec) runner_exec "$@" ;;
-  shell) runner_shell ;;
-  version) runner_version ;;
-  *)
-    runner_validate_plugin_name "$CMD" || die "invalid command name: ${CMD}"
-    plugin="${PLUGIN_DIR}/${CMD}"
-
-    if [[ -x "$plugin" ]]; then
-      exec "$plugin" "$@"
+case "$command" in
+  --help)
+    [[ $# -eq 0 ]] || runner_error RUNNER_E_USAGE "help accepts no arguments" "Use runner --help." 2
+    runner_help
+    ;;
+  --version)
+    [[ $# -eq 0 ]] || runner_error RUNNER_E_USAGE "--version accepts no arguments" "Use runner --version." 2
+    runner_version
+    ;;
+  info)
+    runner_info "$@"
+    ;;
+  tool)
+    runner_tool "$@"
+    ;;
+  exec)
+    if [[ "${1:-}" != "--" ]]; then
+      runner_deprecation "delimiter-free exec will be removed in v1.0.0; use 'runner exec -- <program> [arguments...]'."
+      [[ $# -gt 0 ]] || runner_error RUNNER_E_USAGE "missing program" "Use runner exec -- <program> [arguments...]." 2
+      exec "$@"
     fi
-
-    die "unknown command: ${CMD}"
+    runner_exec "$@"
+    ;;
+  shell)
+    runner_shell "$@"
+    ;;
+  about)
+    [[ $# -eq 0 ]] || runner_error RUNNER_E_USAGE "about accepts no arguments" "Use runner info --format text." 2
+    runner_deprecation "'runner about' will be removed in v1.0.0; use 'runner info --format text'."
+    runner_info --format text
+    ;;
+  version)
+    [[ $# -eq 0 ]] || runner_error RUNNER_E_USAGE "version accepts no arguments" "Use runner --version." 2
+    runner_deprecation "'runner version' will be removed in v1.0.0; use 'runner --version'."
+    runner_version
+    ;;
+  *)
+    [[ "$command" != --* ]] || runner_error RUNNER_E_USAGE "Unknown Runner option '${command}'." "Use runner --help." 2
+    if runner_resolve_tool "$command" >/dev/null; then
+      canonical="$(runner_resolve_tool "$command")"
+      runner_deprecation "direct tool commands will be removed in v1.0.0; use 'runner tool <name> [arguments...]'."
+      runner_tool_exec "$canonical" "$@"
+    fi
+    runner_error RUNNER_E_NOT_FOUND "Unknown Runner command." "Run 'runner --help' to list canonical commands." 4
     ;;
 esac

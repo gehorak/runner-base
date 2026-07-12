@@ -46,8 +46,8 @@ def validate(document: dict[str, Any]) -> None:
     require(SHA256.fullmatch(string_at(document, "image", "published_digest")) is not None, "published digest must be sha256")
     require(PARENT_REFERENCE.fullmatch(string_at(document, "image", "parent_reference")) is not None, "parent reference must be the pinned Debian base")
     require(SHA256.fullmatch(string_at(document, "image", "parent_digest")) is not None, "parent digest must be sha256")
-    require(string_at(document, "contract", "runner_contract_version") == "legacy-v0.2", "unexpected runner contract version")
-    require(string_at(document, "contract", "cli_contract_track") == "legacy", "unexpected CLI contract track")
+    require(string_at(document, "contract", "runner_contract_version") == "v001", "unexpected runner contract version")
+    require(string_at(document, "contract", "cli_contract_track") == "compatibility-bridge-v0.3", "unexpected CLI contract track")
     require(document.get("platform") == "linux/amd64", "platform must be linux/amd64")
     require(isinstance(document.get("tests"), list) and document["tests"], "tests must be a non-empty list")
     for test in document["tests"]:

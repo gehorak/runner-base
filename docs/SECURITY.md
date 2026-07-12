@@ -1,6 +1,6 @@
 # Security model for runner-base
 
-Status: Normative operating guidance for the current legacy v0.2.x base contract.
+Status: Normative operating guidance for the local v0.3.0 compatibility-release candidate; the published v0.2.6 image remains the legacy public baseline.
 
 ## Boundary
 

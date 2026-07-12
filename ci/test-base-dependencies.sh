@@ -22,13 +22,13 @@ required_commands=(
 )
 
 for command in "${required_commands[@]}"; do
-  docker run --rm "${IMAGE}" exec sh -c "command -v '${command}' >/dev/null"
+  docker run --rm "${IMAGE}" exec -- sh -c "command -v '${command}' >/dev/null"
 done
 
-docker run --rm "${IMAGE}" exec test -r /etc/ssl/certs/ca-certificates.crt
+docker run --rm "${IMAGE}" exec -- sh -c 'test -r /etc/ssl/certs/ca-certificates.crt'
 
 for command in wget jq; do
-  if docker run --rm "${IMAGE}" exec sh -c "command -v '${command}' >/dev/null 2>&1"; then
+  if docker run --rm "${IMAGE}" exec -- sh -c "command -v '${command}' >/dev/null 2>&1"; then
     echo "ERROR: ${command} is not an approved base dependency" >&2
     exit 1
   fi

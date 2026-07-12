@@ -1,6 +1,6 @@
 # Usage guidance for runner-base
 
-Status: Current legacy v0.2.x usage. The v001 target in `docs/CLI-V001.md` is not current runtime behavior.
+Status: Local v0.3.0 compatibility-release candidate usage. The published v0.2.6 image remains legacy until v0.3.0 is separately released.
 
 ## Image references
 
@@ -19,13 +19,12 @@ RUNNER_IMAGE=ghcr.io/gehorak/runner-base:<released-version>@sha256:<published-di
 ## Inspection and explicit execution
 
 ```bash
-docker run --rm "$RUNNER_IMAGE" help
-docker run --rm "$RUNNER_IMAGE" about
-docker run --rm "$RUNNER_IMAGE" info
-docker run --rm "$RUNNER_IMAGE" exec git --version
+docker run --rm "$RUNNER_IMAGE" --help
+docker run --rm "$RUNNER_IMAGE" info --format json
+docker run --rm "$RUNNER_IMAGE" exec -- git --version
 ```
 
-The current legacy interface requires `runner exec <program> [arguments...]`. Do not use the future `runner exec --` syntax until a public v0.3.0 release documents it as supported.
+Use `runner exec -- <program> [arguments...]` for canonical v0.3.0 usage. During the bridge, `runner exec <program> [arguments...]` still works with one deprecation warning and will be removed in v1.0.0.
 
 ## Workspace mounts
 
@@ -36,7 +35,7 @@ docker run --rm \
   --user 10001:10001 \
   -v "$PWD:/workspace:rw" \
   -w /workspace \
-  "$RUNNER_IMAGE" exec sh -c 'id && pwd'
+  "$RUNNER_IMAGE" exec -- sh -c 'id && pwd'
 ```
 
 For CI, set the image reference once and pass it only to reviewed jobs. Use the same immutable reference for every job that requires compatible base behavior.

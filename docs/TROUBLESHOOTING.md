@@ -1,6 +1,6 @@
 # Troubleshooting runner-base
 
-Status: Current legacy v0.2.x operational guidance.
+Status: Operational guidance for the local v0.3.0 compatibility-release candidate; no v0.3.0 image has been published.
 
 ## Workspace mount is not writable
 
@@ -18,9 +18,9 @@ Network access is an operator concern. Confirm that the container runtime has th
 
 The image deliberately rejects effective UID `0`, including when a container runtime supplies `--user 0`. Run with the manifest-declared user and repair workspace ownership instead.
 
-## Tool or plugin is missing
+## Tool is missing
 
-`runner-base` intentionally contains no domain plugin. Inspect `runner info`; then use the documented derived image that owns the requested tool. Do not expect direct system command forwarding.
+`runner-base` intentionally contains no domain tool. Inspect `runner tool --format json`; then use the documented derived image that declaratively registers the requested tool. Do not expect direct system command forwarding.
 
 ## Release reference is unclear
 

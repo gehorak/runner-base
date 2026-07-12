@@ -1,6 +1,6 @@
 # Release, rollback, and supply-chain policy
 
-Status: Policy for the unreleased `v0.2.6` stabilization target.
+Status: Policy for the local `v0.3.0` compatibility-release candidate. No v0.3.0 tag or publication has been created.
 
 ## Supported platform
 

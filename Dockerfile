@@ -88,36 +88,17 @@ COPY runner-metadata.sh /usr/local/lib/runner/metadata.sh
 
 
 # =============================================================================
-# Manifest validation
+# Manifest validation and materialization
 #
-# Fail early if the manifest schema is unsupported.
+# The base owns validation of declarative image and tool metadata. Derived
+# images may invoke runner_metadata_materialize_manifest after replacing their
+# manifest; they may not replace this parser or the runtime contract.
 # =============================================================================
 
 # Source only the trusted parser library. Metadata files stay data-only.
 RUN chmod 0444 /usr/local/lib/runner/metadata.sh \
  && . /usr/local/lib/runner/metadata.sh \
- && runner_metadata_validate_file /tmp/image.manifest
-
-RUN grep -q '^MANIFEST_SCHEMA_VERSION=1$' /tmp/image.manifest \
- || (echo "ERROR: unsupported manifest schema version" >&2 && exit 1)
-
-
-# =============================================================================
-# Materialize runtime contract
-#
-# Runtime code MUST read only files under /etc/runner.
-# The manifest itself MUST NOT be accessed at runtime.
-# =============================================================================
-
-RUN . /usr/local/lib/runner/metadata.sh \
- && mkdir -p /etc/runner \
- && grep '^RUNNER_'  /tmp/image.manifest > /etc/runner/image.env \
- && grep '^RUNTIME_' /tmp/image.manifest > /etc/runner/runtime.env \
- && { grep '^TOOL_' /tmp/image.manifest > /etc/runner/tools.env || [[ $? -eq 1 ]]; } \
- && runner_metadata_validate_file /etc/runner/image.env \
- && runner_metadata_validate_file /etc/runner/runtime.env \
- && runner_metadata_validate_file /etc/runner/tools.env \
- && chmod 0444 /etc/runner/*.env
+ && runner_metadata_materialize_manifest /tmp/image.manifest
 
 
 # =============================================================================
@@ -187,7 +168,7 @@ USER ${RUNTIME_USER_NAME}
 # =============================================================================
 
 ENTRYPOINT ["/usr/local/bin/runner"]
-CMD ["help"]
+CMD ["--help"]
 
 
 # =============================================================================
