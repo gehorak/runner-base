@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the future CLI v001 contract package without executing Runner."""
+"""Validate the CLI v001 contract package without executing Runner."""
 
 from __future__ import annotations
 

@@ -3,8 +3,9 @@
 ## Purpose
 
 This document describes the **architectural principles, structure,
-and invariants** of the local **v0.3.0 compatibility-release candidate**. The
-published v0.2.6 image remains the legacy public baseline until v0.3.0 release.
+and invariants** of the public **v0.3.0 compatibility bridge**. `v0.3.0`
+is the published v0.3 baseline; subsequent source changes remain unreleased
+until their matching release evidence exists.
 
 It explains:
 

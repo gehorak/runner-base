@@ -1,6 +1,8 @@
 # Usage guidance for runner-base
 
-Status: Local v0.3.0 compatibility-release candidate usage. The published v0.2.6 image remains legacy until v0.3.0 is separately released.
+Status: Usage guidance for the public v0.3.0 compatibility bridge. `v0.2.6`
+is a historical legacy release; use public release evidence for any later
+patch version.
 
 ## Image references
 

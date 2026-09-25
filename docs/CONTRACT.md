@@ -3,8 +3,8 @@
 ## Purpose
 
 This document defines the **execution and interface contract**
-of the local v0.3.0 compatibility-release candidate. The published v0.2.6
-release remains the legacy public baseline until v0.3.0 is separately released.
+of the public v0.3.0 compatibility bridge. `v0.2.6` remains a historical
+legacy stabilization release; v0.3.0 is the public baseline for this contract.
 
 It specifies:
 

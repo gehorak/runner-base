@@ -1,6 +1,8 @@
 # Release, rollback, and supply-chain policy
 
-Status: Policy for the local `v0.3.0` compatibility-release candidate. No v0.3.0 tag or publication has been created.
+Status: Policy for public `runner-base` releases. `v0.3.0` was published on
+2026-07-12; source changes for later versions remain unreleased until their
+matching tag and public evidence assets exist.
 
 ## Supported platform
 

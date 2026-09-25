@@ -1,6 +1,7 @@
 # Troubleshooting runner-base
 
-Status: Operational guidance for the local v0.3.0 compatibility-release candidate; no v0.3.0 image has been published.
+Status: Operational guidance for the public v0.3.0 compatibility bridge.
+Unreleased patch changes must not be used as a public image reference.
 
 ## Workspace mount is not writable
 

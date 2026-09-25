@@ -85,7 +85,7 @@ jobs:
       # -----------------------------------------------------------------------
 
       - name: Checkout source at tag
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -165,6 +165,20 @@ jobs:
             --tag "${TAG}" \
             --revision "${COMMIT}"
 
+      - name: Read pinned base image metadata
+        id: parent
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          reference="$(python3 ci/parent-reference.py --field reference)"
+          digest="$(python3 ci/parent-reference.py --field digest)"
+          name="${reference%@*}"
+          {
+            echo "name=${name}"
+            echo "reference=${reference}"
+            echo "digest=${digest}"
+          } >> "${GITHUB_OUTPUT}"
+
 
 
 
@@ -193,8 +207,8 @@ jobs:
             org.opencontainers.image.source=https://github.com/gehorak/runner-base
             org.opencontainers.image.version=${{ steps.semver.outputs.version }}
             org.opencontainers.image.revision=${{ steps.semver.outputs.commit }}
-            org.opencontainers.image.base.name=debian:bookworm-slim
-            org.opencontainers.image.base.digest=sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df
+            org.opencontainers.image.base.name=${{ steps.parent.outputs.name }}
+            org.opencontainers.image.base.digest=${{ steps.parent.outputs.digest }}
 
 
       # -----------------------------------------------------------------------
@@ -202,7 +216,7 @@ jobs:
       # -----------------------------------------------------------------------
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -284,6 +298,8 @@ jobs:
         shell: bash
         env:
           IMAGE: runner-release:test
+          EXPECTED_RUNNER_VERSION: ${{ steps.semver.outputs.version }}
+          EXPECTED_IMAGE_VERSION: ${{ steps.semver.outputs.version }}
         run: |
           set -Eeuo pipefail
           bash ci/run-base-tests.sh
@@ -296,7 +312,7 @@ jobs:
           docker run --rm --volume "${PWD}:/work:ro" aquasec/trivy@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 image --input /work/release-artifacts/runner-release.test.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
       - name: Generate SPDX SBOM for tested image
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           image: runner-release:test
           format: spdx-json
@@ -381,7 +397,7 @@ jobs:
 
       - name: Attest published image provenance
         id: attest-provenance
-        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/gehorak/runner-base
           subject-digest: ${{ steps.digests.outputs.published_digest }}
@@ -390,7 +406,7 @@ jobs:
 
       - name: Attest published image SBOM
         id: attest-sbom
-        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/gehorak/runner-base
           subject-digest: ${{ steps.digests.outputs.published_digest }}
@@ -410,20 +426,20 @@ jobs:
           RUNNER_RELEASE_PROVENANCE_REFERENCE: ${{ steps.attest-provenance.outputs.attestation-url }}
           RUNNER_RELEASE_PREVIOUS_REFERENCE: ${{ steps.digests.outputs.previous_reference }}
           RUNNER_RELEASE_PREVIOUS_DIGEST: ${{ steps.digests.outputs.previous_digest }}
+          RUNNER_RELEASE_PARENT_REFERENCE: ${{ steps.parent.outputs.reference }}
+          RUNNER_RELEASE_PARENT_DIGEST: ${{ steps.parent.outputs.digest }}
         run: |
           set -Eeuo pipefail
           RUNNER_RELEASE_CANDIDATE_IMAGE_ID="$(docker image inspect runner-release:test --format '{{.Id}}')"
           RUNNER_RELEASE_ACTUAL_IDENTITY_FILE=release-artifacts/actual-image-identity.json
           RUNNER_RELEASE_TESTS="$(bash ci/run-base-tests.sh --list | paste -sd, -)"
-          RUNNER_RELEASE_PARENT_REFERENCE="$(python3 ci/parent-reference.py --field reference)"
-          RUNNER_RELEASE_PARENT_DIGEST="$(python3 ci/parent-reference.py --field digest)"
           export RUNNER_RELEASE_CANDIDATE_IMAGE_ID
           export RUNNER_RELEASE_ACTUAL_IDENTITY_FILE RUNNER_RELEASE_TESTS RUNNER_RELEASE_PARENT_REFERENCE RUNNER_RELEASE_PARENT_DIGEST
           python3 ci/write-release-evidence.py
           python3 ci/validate-release-evidence.py "${RUNNER_RELEASE_EVIDENCE_OUTPUT}"
 
       - name: Publish release evidence assets
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           generate_release_notes: true
           files: |

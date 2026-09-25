@@ -87,7 +87,7 @@ help:
 	@echo "  build        	Build the Docker image locally"
 	@echo "  test         	Run all local tests (same as CI)"
 	@echo "  smoke        	Run basic smoke tests only"
-	@echo "  contract     	Validate future CLI v001 contract fixtures"
+	@echo "  contract     	Validate CLI v001 contract fixtures"
 	@echo "  check          Build + test (repository invariant)"
 	@echo "  release        Validate local release prerequisites"
 	@echo "  lint         	Lint the runner script"
@@ -185,7 +185,7 @@ smoke:
 
 
 # -----------------------------------------------------------------------------
-# Future CLI contract fixtures (runtime-neutral)
+# CLI v001 contract fixtures (runtime-neutral)
 # -----------------------------------------------------------------------------
 
 contract:

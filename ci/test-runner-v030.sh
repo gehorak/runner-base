@@ -96,10 +96,10 @@ workdir_context="${TMP_DIR}/workdir-image"
 mkdir -p "${workdir_context}"
 printf '%s\n' "FROM ${IMAGE}" 'USER root' 'RUN mkdir /workspace/subdir && chown 10001:10001 /workspace/subdir' 'USER runner' >"${workdir_context}/Dockerfile"
 docker build -t "${WORKDIR_FIXTURE_IMAGE}" "${workdir_context}" >/dev/null
-docker run --rm --workdir /workspace/subdir "${WORKDIR_FIXTURE_IMAGE}" exec -- pwd | grep -Fx '/workspace/subdir' >/dev/null
+MSYS2_ARG_CONV_EXCL='/workspace/subdir' docker run --rm --workdir /workspace/subdir "${WORKDIR_FIXTURE_IMAGE}" exec -- pwd | grep -Fx '/workspace/subdir' >/dev/null
 mkdir -p "${TMP_DIR}/mounted-subdir"
 chmod 0777 "${TMP_DIR}/mounted-subdir"
-docker run --rm --workdir /workspace/subdir -v "${TMP_DIR}/mounted-subdir:/workspace/subdir" "${IMAGE}" exec -- sh -c 'test -w . && pwd' | grep -Fx '/workspace/subdir' >/dev/null
+MSYS2_ARG_CONV_EXCL='/workspace/subdir' docker run --rm --workdir /workspace/subdir -v "${TMP_DIR}/mounted-subdir:/workspace/subdir" "${IMAGE}" exec -- sh -c 'test -w . && pwd' | grep -Fx '/workspace/subdir' >/dev/null
 docker image rm -f "${WORKDIR_FIXTURE_IMAGE}" >/dev/null 2>&1 || true
 
 expect_exit 2 docker run --rm "${IMAGE}" info --format yaml >"${TMP_DIR}/format.out" 2>"${TMP_DIR}/format.err"

@@ -51,7 +51,7 @@ docker run --rm "${IMAGE}" exec -- sh -c "grep -q '^RUNNER_IMAGE_REVISION=' /etc
 # -----------------------------------------------------------------------------
 
 echo "==> Identity: platform-owned files are immutable to the runtime user"
-docker run --rm --user 0 --entrypoint /bin/sh "${IMAGE}" -c '
+MSYS2_ARG_CONV_EXCL='/bin/sh' docker run --rm --user 0 --entrypoint /bin/sh "${IMAGE}" -c '
   set -eu
   for file in /etc/runner/image.env /etc/runner/runtime.env /etc/runner/tools.env /usr/local/bin/runner /usr/local/lib/runner/metadata.sh; do
     set -- $(stat -c "%u %g %a" "$file")

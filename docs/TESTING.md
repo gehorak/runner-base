@@ -102,7 +102,7 @@ and a well-defined scope.
 
 **Purpose**
 
-* validate the v0.3.0 CLI contract before and alongside dispatcher implementation
+* validate the established v0.3.0 CLI contract alongside dispatcher maintenance
 * keep JSON schemas, deterministic examples, human snapshots, and migration behavior cases aligned
 * prove CLI-01 through CLI-03 against the frozen contract artifacts
 
@@ -318,7 +318,7 @@ Tests are designed to be:
 * readable in terminal output
 * fast enough for frequent execution
 
-The future CLI contract fixture gate is also available independently through `make contract` or `python ci/validate-cli-v001-contract.py`.
+The CLI v001 contract fixture gate is also available independently through `make contract` or `python ci/validate-cli-v001-contract.py`.
 
 ### CI pipelines
 

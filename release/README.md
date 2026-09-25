@@ -1,6 +1,8 @@
 # runner-base release evidence
 
-Status: Release-evidence assets for the local `v0.3.0` compatibility-release candidate. No v0.3.0 release evidence exists until publication is separately authorized.
+Status: Release-evidence assets for public `runner-base` releases. `v0.3.0`
+has published evidence; an unreleased target version has no evidence until its
+matching release workflow completes.
 
 Every release workflow produces and attaches these public assets to the matching GitHub Release:
 

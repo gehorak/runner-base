@@ -13,7 +13,9 @@ The image follows a **strict execution model** focused on:
 This repository is the **base component of the runner tooling platform**.
 All domain-specific runner images are built on top of this image.
 
-Current published release: `v0.2.6`. This source tree is a local `v0.3.0` compatibility-release candidate: the canonical CLI v001 surface is implemented, while the frozen legacy forms remain deprecated bridge aliases. It is not published or released by this source state.
+Current published release: `v0.3.0`. It established the canonical CLI v001 compatibility bridge while preserving the deprecated bridge aliases. This source tree prepares the unreleased `v0.3.1` security patch; publication requires its matching tag, immutable image digest, SBOM, provenance, and release evidence.
+
+Security advisory: the published `v0.3.0` image has fixable HIGH-severity dependency findings. Do not treat it as a safe rollback after `v0.3.1` is published. The maintainer must separately decide whether the release is marked `YANKED` under `docs/RELEASES.md`; this source change does not alter a published release.
 
 ---
 
@@ -159,7 +161,7 @@ docker run --rm runner-base exec -- id
 * `CHANGELOG.md` — version history
 * `docs/ARCHITECTURE.md` — platform architecture
 * `docs/CONTRACT.md` — execution and CLI contract
-* `docs/CLI-V001.md` — future CLI target for v0.3.0; not current v0.2.x behavior
+* `docs/CLI-V001.md` — public CLI v001 compatibility bridge introduced by v0.3.0
 * `docs/USAGE.md` — immutable-reference and workspace usage guidance
 * `docs/SECURITY.md` — operator security model and container hardening guidance
 * `SECURITY.md` — repository security reporting entrypoint
