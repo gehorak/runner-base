@@ -15,7 +15,14 @@ SOURCE = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
 def parent_digest() -> str:
     result = subprocess.run(
-        [sys.executable, str(ROOT / "ci/parent-reference.py"), "--field", "digest"],
+        [
+            sys.executable,
+            str(ROOT / "ci/parent-reference.py"),
+            "--dockerfile",
+            str(ROOT / "Dockerfile"),
+            "--field",
+            "digest",
+        ],
         text=True,
         capture_output=True,
         check=False,

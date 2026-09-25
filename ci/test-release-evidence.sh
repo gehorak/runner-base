@@ -24,8 +24,8 @@ export RUNNER_RELEASE_CANDIDATE_IMAGE_ID="sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 export RUNNER_RELEASE_ACTUAL_IDENTITY_FILE="${IDENTITY}"
 export RUNNER_RELEASE_PUBLISHED_REFERENCE="ghcr.io/gehorak/runner-base:0.3.0"
 export RUNNER_RELEASE_PUBLISHED_DIGEST="sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-RUNNER_RELEASE_PARENT_REFERENCE="$(${PYTHON} "${ROOT_DIR}/ci/parent-reference.py" --field reference)"
-RUNNER_RELEASE_PARENT_DIGEST="$(${PYTHON} "${ROOT_DIR}/ci/parent-reference.py" --field digest)"
+RUNNER_RELEASE_PARENT_REFERENCE="$(${PYTHON} "${ROOT_DIR}/ci/parent-reference.py" --dockerfile "${ROOT_DIR}/Dockerfile" --field reference)"
+RUNNER_RELEASE_PARENT_DIGEST="$(${PYTHON} "${ROOT_DIR}/ci/parent-reference.py" --dockerfile "${ROOT_DIR}/Dockerfile" --field digest)"
 export RUNNER_RELEASE_PARENT_REFERENCE RUNNER_RELEASE_PARENT_DIGEST
 export RUNNER_RELEASE_SBOM_REFERENCE="runner-base-0.3.0.sbom.spdx.json"
 export RUNNER_RELEASE_PROVENANCE_REFERENCE="https://github.com/gehorak/runner-base/attestations/1"
