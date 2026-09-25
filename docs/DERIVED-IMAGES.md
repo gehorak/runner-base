@@ -1,6 +1,8 @@
 # Derived-image authoring contract
 
-Status: Normative for images derived from the local v0.3.0 compatibility-release candidate; public derived adoption remains deferred until base release.
+Status: Normative for images derived from the public v0.3.0 compatibility
+bridge. Derived images must use public release evidence and immutable parent
+digests; an unreleased patch version is not an adoption reference.
 
 ## What a derived image may add
 

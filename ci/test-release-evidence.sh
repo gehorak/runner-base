@@ -24,8 +24,9 @@ export RUNNER_RELEASE_CANDIDATE_IMAGE_ID="sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 export RUNNER_RELEASE_ACTUAL_IDENTITY_FILE="${IDENTITY}"
 export RUNNER_RELEASE_PUBLISHED_REFERENCE="ghcr.io/gehorak/runner-base:0.3.0"
 export RUNNER_RELEASE_PUBLISHED_DIGEST="sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-export RUNNER_RELEASE_PARENT_REFERENCE="debian:bookworm-slim@sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df"
-export RUNNER_RELEASE_PARENT_DIGEST="sha256:60eac759739651111db372c07be67863818726f754804b8707c90979bda511df"
+RUNNER_RELEASE_PARENT_REFERENCE="$(${PYTHON} "${ROOT_DIR}/ci/parent-reference.py" --dockerfile "${ROOT_DIR}/Dockerfile" --field reference)"
+RUNNER_RELEASE_PARENT_DIGEST="$(${PYTHON} "${ROOT_DIR}/ci/parent-reference.py" --dockerfile "${ROOT_DIR}/Dockerfile" --field digest)"
+export RUNNER_RELEASE_PARENT_REFERENCE RUNNER_RELEASE_PARENT_DIGEST
 export RUNNER_RELEASE_SBOM_REFERENCE="runner-base-0.3.0.sbom.spdx.json"
 export RUNNER_RELEASE_PROVENANCE_REFERENCE="https://github.com/gehorak/runner-base/attestations/1"
 export RUNNER_RELEASE_PREVIOUS_REFERENCE="ghcr.io/gehorak/runner-base:0.2.6"
@@ -36,14 +37,14 @@ export RUNNER_RELEASE_TESTS
 "${PYTHON}" "${ROOT_DIR}/ci/write-release-evidence.py"
 "${PYTHON}" "${ROOT_DIR}/ci/validate-release-evidence.py" "${EVIDENCE}"
 
-"${PYTHON}" - "${EVIDENCE}" "${ROOT_DIR}" <<'PY'
+"${PYTHON}" - "${EVIDENCE}" <<'PY'
 import json
+import os
 import pathlib
-import subprocess
 import sys
 
 evidence = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-expected = subprocess.check_output(["bash", str(pathlib.Path(sys.argv[2]) / "ci/run-base-tests.sh"), "--list"], text=True).splitlines()
+expected = os.environ["RUNNER_RELEASE_TESTS"].split(",")
 assert evidence["tests"] == expected
 PY
 

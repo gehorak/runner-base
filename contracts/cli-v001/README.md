@@ -1,6 +1,7 @@
 # CLI v001 contract fixtures
 
-Status: Target contract for `runner-base v0.3.0`; not implemented by the current v0.2.x runtime.
+Status: Public contract implemented by `runner-base v0.3.0`. The v0.2.x line
+is historical legacy behavior.
 
 This directory is the machine-reviewable companion to [`docs/CLI-V001.md`](../../docs/CLI-V001.md).
 

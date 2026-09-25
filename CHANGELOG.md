@@ -7,20 +7,47 @@ and [Semantic Versioning](https://semver.org/). The changelog focuses on
 externally observable behavior and execution-contract changes; internal
 refactors without execution-model impact may be omitted.
 
-## [0.3.0] - Release preparation
+## [0.3.1] - Unreleased
 
-This release preparation establishes the first public v0.3 platform line. It
+### Security
+
+- Update the pinned `debian:bookworm-slim` parent image to remediate fixable
+  HIGH-severity findings inherited by the published `v0.3.0` image.
+- Keep Dockerfile, release OCI metadata, and release evidence parent identity
+  derived from one validated Dockerfile reference.
+
+### Release safety
+
+- Bind release-suite identity expectations to the SemVer tag so a `v0.3.1`
+  candidate cannot be validated as `v0.3.0`.
+- Refresh reviewed GitHub Actions pins while preserving their existing workflow
+  inputs, outputs, and explicit commit-SHA pinning.
+- Record the Git Bash path-conversion fixes required by supported local Bash
+  workflows without weakening Linux release validation.
+
+### Upgrade advisory
+
+- The published `v0.3.0` image has known fixable HIGH-severity dependency
+  findings. After publication, use the `v0.3.1` release evidence to select its
+  immutable image digest. A rollback to `v0.3.0` restores these findings.
+- The maintainer must decide separately whether `v0.3.0` is marked `YANKED`.
+  This unreleased source change does not change the state of an existing tag,
+  image, release asset, or alias.
+
+## [0.3.0] - 2026-07-12
+
+This release established the first public v0.3 platform line. It
 keeps the compatibility bridge explicit, adds the derived-image safeguards
 required before public adoption, and does not claim that a complex real-world
 derived image has already been validated.
 
 ### Summary
 
-`v0.3.0` prepares the stable CLI v001 compatibility bridge, non-root runtime,
+`v0.3.0` established the stable CLI v001 compatibility bridge, non-root runtime,
 strict metadata boundary, derived-image integrity model, reusable conformance
-interface, and release evidence path. It is intended to become a supported base
-for direct use and experimental or validation derived images after a separately
-authorized tag and publication.
+interface, and release evidence path. It is a supported base for direct use and
+experimental or validation derived images when consumers use its public release
+evidence and immutable image digest.
 
 ### Highlights
 

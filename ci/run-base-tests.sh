@@ -12,6 +12,7 @@ TEST_SCRIPTS=(
   ci/test-release-candidate-identity.py
   ci/test-release-publication-state.py
   ci/test-release-workflow-recovery.py
+  ci/test-release-version-wiring.py
   ci/test-published-security-scan.py
   ci/test-derived-conformance-workflow.py
   ci/test-tools-lock.py

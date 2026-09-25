@@ -1,6 +1,20 @@
 # Security model for runner-base
 
-Status: Normative operating guidance for the local v0.3.0 compatibility-release candidate; the published v0.2.6 image remains the legacy public baseline.
+Status: Normative operating guidance for the public v0.3.0 compatibility
+bridge. `v0.2.6` is a historical legacy stabilization release.
+
+## Published release advisory
+
+The scheduled scan found fixable HIGH-severity dependency findings in the
+published `v0.3.0` image. The unreleased `v0.3.1` patch is intended to replace
+that image after its own immutable digest, SBOM, provenance, and release
+evidence have been published. Do not treat `v0.3.0` as a safe rollback once
+the patch is available.
+
+The maintainer must decide whether the impact requires marking `v0.3.0` as
+`YANKED` under `docs/RELEASES.md`. Preserve its tag, digest, SBOM, provenance,
+and evidence regardless of that decision. This document does not change a
+published release state.
 
 ## Boundary
 
