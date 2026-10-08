@@ -94,9 +94,10 @@ dispatch. It resolves the latest GitHub Release's strict SemVer tag, resolves
 that registry tag to an immutable digest, records both values in the job
 summary, and scans that exact digest with the release-pinned Trivy image. The
 job fails on fixable `HIGH` or `CRITICAL` findings. A failed scan is a triage
-signal; it does not mutate an existing release or alias. The SARIF report is
-uploaded to GitHub Code scanning even when vulnerabilities fail the scan; the
-`trivy-published-image` category follows the latest published release over time.
+signal; it does not mutate an existing release or alias. The SARIF report
+includes all severities and unfixed findings, and is uploaded to GitHub Code
+scanning even when the gate fails; the `trivy-published-image` category follows
+the latest published release over time.
 
 ---
 

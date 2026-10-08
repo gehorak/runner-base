@@ -13,6 +13,11 @@ for value in ("workflow_call:", "base_reference:", "expected_contract_version:",
     assert value in workflow
 assert "repository: gehorak/runner-base" in workflow
 assert "conformance_ref must be a full immutable commit SHA" in workflow
+assert "ref: ${{ inputs.conformance_ref }}" not in workflow
+assert workflow.count("persist-credentials: false") == 2
+assert 'git -C runner-base-contract fetch --depth=1 origin "${CONFORMANCE_REF}"' in workflow
+assert 'git -C runner-base-contract checkout --detach "${CONFORMANCE_REF}"' in workflow
+assert 'docker build --build-arg "BASE_IMAGE=${BASE_REFERENCE}" --file "${DOCKERFILE}" --tag "${IMAGE}" "${BUILD_CONTEXT}"' in workflow
 assert "runner-base-contract/ci/derived-conformance.sh" in workflow
 
 print("==> Derived conformance workflow tests passed")

@@ -66,8 +66,9 @@ The weekly/manual published-image scan uploads a SARIF report to GitHub
 Security > Code scanning under `trivy-published-image`, including when findings
 fail the job. Its job summary records the exact scanned release reference and
 digest. Results describe that published image, not a fresh build of the source
-commit to which GitHub associates the report. Only fixable HIGH/CRITICAL findings
-are included; an empty report is not a claim that every severity is absent.
+commit to which GitHub associates the report. The report includes all Trivy
+vulnerability severities and unfixed findings; only fixable HIGH/CRITICAL
+findings fail the scan job.
 
 ## Security response
 

@@ -19,18 +19,23 @@ assert 'image "${REFERENCE}@${DIGEST}"' in workflow
 scanner = "aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500"
 for name in ("ci.yml", "release.yml", "published-security-scan.yml"):
     source = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
-    assert source.count(scanner) == 1, f"scanner pin drift in {name}"
+    expected_count = 2 if name == "published-security-scan.yml" else 1
+    assert source.count(scanner) == expected_count, f"scanner pin drift in {name}"
     assert "--severity HIGH,CRITICAL --ignore-unfixed --exit-code 1" in source
 
 assert "security-events: write" in workflow
 assert '--volume "${PWD}:/work"' in workflow
 assert "--format sarif --output /work/trivy.sarif" in workflow
+report = workflow[workflow.index("- name: Scan the exact published digest"):workflow.index("- name: Enforce the release vulnerability gate")]
+assert "--severity" not in report
+assert "--ignore-unfixed" not in report
+gate = workflow[workflow.index("- name: Enforce the release vulnerability gate"):workflow.index("- name: Publish vulnerability report")]
+assert "--severity HIGH,CRITICAL --ignore-unfixed --exit-code 1" in gate
 upload = workflow[workflow.index("- name: Publish vulnerability report"):]
 assert "if: ${{ !cancelled() && hashFiles('trivy.sarif') != '' }}" in upload
 assert re.search(r"github/codeql-action/upload-sarif@[0-9a-f]{40} ", upload)
 assert "sarif_file: trivy.sarif" in upload
 assert "category: trivy-published-image" in upload
 assert "continue-on-error:" not in workflow
-assert "--severity HIGH,CRITICAL --ignore-unfixed --exit-code 1" in workflow
 
 print("==> Published security scan workflow tests passed")
