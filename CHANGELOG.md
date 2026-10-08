@@ -7,7 +7,26 @@ and [Semantic Versioning](https://semver.org/). The changelog focuses on
 externally observable behavior and execution-contract changes; internal
 refactors without execution-model impact may be omitted.
 
-## [0.3.1] - Unreleased
+## [0.3.2] - Unreleased
+
+### Security
+
+- Refresh the digest-pinned Debian Bookworm parent and rebuild installed
+  dependencies after the published `v0.3.1` scan reported 23 HIGH and 12 CRITICAL
+  fixable findings. Preserve the CLI v001 contract and supported `linux/amd64`
+  platform.
+- Pin Trivy `0.71.0` consistently in CI, release, and published-image monitoring
+  without relaxing the fixable HIGH/CRITICAL gate.
+- Publish the weekly/manual immutable-image scan to GitHub Code scanning as
+  SARIF, including reports from failed vulnerability gates.
+
+### Upgrade advisory
+
+- Adopt the new immutable digest only after the matching release evidence is
+  published. The `v0.3.1` digest recorded as the previous image is historical
+  evidence, not a safe security rollback. Existing release bits remain immutable.
+
+## [0.3.1] - 2026-09-25
 
 ### Security
 

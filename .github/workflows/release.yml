@@ -309,7 +309,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           docker image save runner-release:test --output release-artifacts/runner-release.test.tar
-          docker run --rm --volume "${PWD}:/work:ro" aquasec/trivy@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 image --input /work/release-artifacts/runner-release.test.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          docker run --rm --volume "${PWD}:/work:ro" aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500 image --input /work/release-artifacts/runner-release.test.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
       - name: Generate SPDX SBOM for tested image
         uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
