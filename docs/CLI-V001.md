@@ -1,7 +1,7 @@
 # Runner CLI v001 target contract
 
 Status: Public compatibility bridge introduced by `runner-base v0.3.0`. The
-unreleased `v0.3.1` patch does not change the CLI v001 contract.
+`v0.3.1` and `v0.3.2` security patches do not change the CLI v001 contract.
 
 ## Release sequence
 

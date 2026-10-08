@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   packages: read
+  security-events: write
 
 jobs:
   scan:
@@ -15,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Checkout source for report locations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Resolve the latest released immutable SemVer digest
         id: target
         shell: bash
@@ -39,5 +42,12 @@ jobs:
           DIGEST: ${{ steps.target.outputs.digest }}
         run: |
           set -Eeuo pipefail
-          docker run --rm aquasec/trivy@sha256:6fb0646988fcd2fdf7bf123f7174945ebc2c9c72d1fa1567c8d7daeeb70f8037 \
-            image "${REFERENCE}@${DIGEST}" --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          docker run --rm --volume "${PWD}:/work" aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500 \
+            image "${REFERENCE}@${DIGEST}" --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            --format sarif --output /work/trivy.sarif
+      - name: Publish vulnerability report to GitHub Security
+        if: ${{ !cancelled() && hashFiles('trivy.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-published-image

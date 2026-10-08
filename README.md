@@ -13,9 +13,9 @@ The image follows a **strict execution model** focused on:
 This repository is the **base component of the runner tooling platform**.
 All domain-specific runner images are built on top of this image.
 
-Current published release: `v0.3.0`. It established the canonical CLI v001 compatibility bridge while preserving the deprecated bridge aliases. This source tree prepares the unreleased `v0.3.1` security patch; publication requires its matching tag, immutable image digest, SBOM, provenance, and release evidence.
+This source tree targets the `v0.3.2` security patch. It preserves the CLI v001 compatibility bridge introduced in `v0.3.0`, including its deprecated aliases. Published status and the immutable image reference are recorded by the [GitHub Release](https://github.com/gehorak/runner-base/releases/tag/v0.3.2), SBOM, provenance, and release evidence; a source change alone does not establish publication.
 
-Security advisory: the published `v0.3.0` image has fixable HIGH-severity dependency findings. Do not treat it as a safe rollback after `v0.3.1` is published. The maintainer must separately decide whether the release is marked `YANKED` under `docs/RELEASES.md`; this source change does not alter a published release.
+Security advisory: the published `v0.3.1` image has fixable HIGH and CRITICAL dependency findings. Upgrade to the evidenced `v0.3.2` digest after publication and successful scanning. Do not use `v0.3.1` as a security rollback; its historical digest remains preserved. See `docs/SECURITY.md` and `docs/RELEASES.md`.
 
 ---
 

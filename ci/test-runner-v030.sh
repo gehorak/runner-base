@@ -99,7 +99,12 @@ docker build -t "${WORKDIR_FIXTURE_IMAGE}" "${workdir_context}" >/dev/null
 MSYS2_ARG_CONV_EXCL='/workspace/subdir' docker run --rm --workdir /workspace/subdir "${WORKDIR_FIXTURE_IMAGE}" exec -- pwd | grep -Fx '/workspace/subdir' >/dev/null
 mkdir -p "${TMP_DIR}/mounted-subdir"
 chmod 0777 "${TMP_DIR}/mounted-subdir"
-MSYS2_ARG_CONV_EXCL='/workspace/subdir' docker run --rm --workdir /workspace/subdir -v "${TMP_DIR}/mounted-subdir:/workspace/subdir" "${IMAGE}" exec -- sh -c 'test -w . && pwd' | grep -Fx '/workspace/subdir' >/dev/null
+if [[ -n "${MSYSTEM:-}" ]] && command -v cygpath >/dev/null 2>&1; then
+  mount_source="$(cygpath -w "${TMP_DIR}/mounted-subdir")"
+  MSYS2_ARG_CONV_EXCL='*' docker run --rm --workdir /workspace/subdir -v "${mount_source}:/workspace/subdir" "${IMAGE}" exec -- sh -c 'test -w . && pwd' | grep -Fx '/workspace/subdir' >/dev/null
+else
+  docker run --rm --workdir /workspace/subdir -v "${TMP_DIR}/mounted-subdir:/workspace/subdir" "${IMAGE}" exec -- sh -c 'test -w . && pwd' | grep -Fx '/workspace/subdir' >/dev/null
+fi
 docker image rm -f "${WORKDIR_FIXTURE_IMAGE}" >/dev/null 2>&1 || true
 
 expect_exit 2 docker run --rm "${IMAGE}" info --format yaml >"${TMP_DIR}/format.out" 2>"${TMP_DIR}/format.err"

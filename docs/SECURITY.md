@@ -5,16 +5,16 @@ bridge. `v0.2.6` is a historical legacy stabilization release.
 
 ## Published release advisory
 
-The scheduled scan found fixable HIGH-severity dependency findings in the
-published `v0.3.0` image. The unreleased `v0.3.1` patch is intended to replace
-that image after its own immutable digest, SBOM, provenance, and release
-evidence have been published. Do not treat `v0.3.0` as a safe rollback once
-the patch is available.
+The published `v0.3.1` image has 23 HIGH and 12 CRITICAL fixable dependency
+findings in the 2026-10-08 scan. The `v0.3.2` security patch refreshes the Debian
+Bookworm parent and rebuilds the installed packages. Use its immutable digest
+only after the matching GitHub Release, SBOM, provenance, and release evidence
+are published and the exact image passes the security gate.
 
-The maintainer must decide whether the impact requires marking `v0.3.0` as
-`YANKED` under `docs/RELEASES.md`. Preserve its tag, digest, SBOM, provenance,
-and evidence regardless of that decision. This document does not change a
-published release state.
+The previous `v0.3.1` digest remains in release evidence for traceability; it is
+not a safe security rollback. Preserve all previous tags, digests, and evidence.
+Marking an existing release `YANKED` is a separate maintainer decision under
+`docs/RELEASES.md`.
 
 ## Boundary
 
@@ -56,11 +56,18 @@ Replace placeholders only with a fixed SemVer and digest recorded by public rele
 
 ## Vulnerability scanning policy
 
-CI scans the image built from the submitted source with Trivy `0.63.0` for
+CI scans the image built from the submitted source with digest-pinned Trivy `0.71.0` for
 fixable `HIGH` and `CRITICAL` vulnerabilities. A finding blocks the change
 unless its documented exception records the scanner, advisory, affected digest,
 expiry date, and a tracked remediation version. Exceptions are reviewed at
 least monthly and are never carried into a release without an explicit renewal.
+
+The weekly/manual published-image scan uploads a SARIF report to GitHub
+Security > Code scanning under `trivy-published-image`, including when findings
+fail the job. Its job summary records the exact scanned release reference and
+digest. Results describe that published image, not a fresh build of the source
+commit to which GitHub associates the report. Only fixable HIGH/CRITICAL findings
+are included; an empty report is not a claim that every severity is absent.
 
 ## Security response
 
