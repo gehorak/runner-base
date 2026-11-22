@@ -7,7 +7,7 @@ and [Semantic Versioning](https://semver.org/). The changelog focuses on
 externally observable behavior and execution-contract changes; internal
 refactors without execution-model impact may be omitted.
 
-## [0.3.3] - Unreleased
+## [0.3.3] - 2026-11-22
 
 ### Security
 
