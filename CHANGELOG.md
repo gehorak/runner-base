@@ -7,7 +7,19 @@ and [Semantic Versioning](https://semver.org/). The changelog focuses on
 externally observable behavior and execution-contract changes; internal
 refactors without execution-model impact may be omitted.
 
-## [0.3.2] - Unreleased
+## [0.3.3] - Unreleased
+
+### Security
+
+- Refresh the digest-pinned Debian Bookworm parent and upgrade already-installed
+  packages during the image build so Bookworm security updates reach the runtime
+  image. Preserve the v0.3 CLI v001 compatibility bridge and `linux/amd64`
+  platform contract.
+- Pass reusable derived-conformance workflow inputs through environment
+  variables, validate the full conformance commit SHA before checkout, and
+  disable persisted checkout credentials.
+
+## [0.3.2] - 2026-10-08
 
 ### Security
 
