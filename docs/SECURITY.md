@@ -5,16 +5,23 @@ bridge. `v0.2.6` is a historical legacy stabilization release.
 
 ## Published release advisory
 
-The published `v0.3.1` image has 23 HIGH and 12 CRITICAL fixable dependency
-findings in the 2026-10-08 scan. The `v0.3.2` security patch refreshes the Debian
-Bookworm parent and rebuilds the installed packages. Use its immutable digest
-only after the matching GitHub Release, SBOM, provenance, and release evidence
-are published and the exact image passes the security gate.
+The published `v0.3.1` image had 23 HIGH and 12 CRITICAL fixable dependency
+findings in its 2026-10-08 scan. Later published-image scans reported fixable
+HIGH and CRITICAL findings for `v0.3.2`, including Debian Bookworm APT, Brotli,
+OpenSSL, and Expat packages.
 
-The previous `v0.3.1` digest remains in release evidence for traceability; it is
-not a safe security rollback. Preserve all previous tags, digests, and evidence.
-Marking an existing release `YANKED` is a separate maintainer decision under
-`docs/RELEASES.md`.
+The local `v0.3.3` candidate refreshes the digest-pinned Bookworm parent and
+upgrades installed packages during the build. Its Trivy 0.71.0 scan with
+`--ignore-unfixed` reported zero fixable HIGH or CRITICAL findings. This local
+result is not public release evidence. Use the immutable `v0.3.3` digest only
+after the matching GitHub
+Release, SBOM, provenance, and release evidence are published and the exact
+published image passes the security gate.
+
+Previous digests remain in release evidence for traceability; do not use a
+known-affected digest as a security rollback. Preserve all previous tags,
+digests, and evidence. Marking an existing release `YANKED` is a separate
+maintainer decision under `docs/RELEASES.md`.
 
 ## Boundary
 

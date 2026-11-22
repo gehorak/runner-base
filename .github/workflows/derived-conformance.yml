@@ -43,28 +43,49 @@ jobs:
   conformance:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate conformance ref
+        shell: bash
+        env:
+          INPUT_CONFORMANCE_REF: ${{ inputs.conformance_ref }}
+        run: |
+          set -Eeuo pipefail
+          [[ "${INPUT_CONFORMANCE_REF}" =~ ^[0-9a-f]{40}$ ]] || { echo 'ERROR: conformance_ref must be a full immutable commit SHA' >&2; exit 1; }
       - name: Checkout derived source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Checkout pinned Runner conformance bundle
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: gehorak/runner-base
           ref: ${{ inputs.conformance_ref }}
           path: runner-base-contract
+          persist-credentials: false
       - name: Build derived image from the declared immutable parent
         shell: bash
+        env:
+          INPUT_BASE_REFERENCE: ${{ inputs.base_reference }}
+          INPUT_BUILD_CONTEXT: ${{ inputs.build_context }}
+          INPUT_DOCKERFILE: ${{ inputs.dockerfile }}
+          INPUT_IMAGE: ${{ inputs.image }}
         run: |
           set -Eeuo pipefail
-          docker build --build-arg "BASE_IMAGE=${{ inputs.base_reference }}" --file "${{ inputs.dockerfile }}" --tag "${{ inputs.image }}" "${{ inputs.build_context }}"
+          docker build --build-arg "BASE_IMAGE=${INPUT_BASE_REFERENCE}" --file "${INPUT_DOCKERFILE}" --tag "${INPUT_IMAGE}" "${INPUT_BUILD_CONTEXT}"
       - name: Run pinned Runner base conformance
         shell: bash
+        env:
+          INPUT_BASE_REFERENCE: ${{ inputs.base_reference }}
+          INPUT_CONFORMANCE_REF: ${{ inputs.conformance_ref }}
+          INPUT_DOMAIN_TEST_PATH: ${{ inputs.domain_test_path }}
+          INPUT_EXPECTED_CONTRACT_VERSION: ${{ inputs.expected_contract_version }}
+          INPUT_IMAGE: ${{ inputs.image }}
+          INPUT_TOOLS_LOCK_PATH: ${{ inputs.tools_lock_path }}
         run: |
           set -Eeuo pipefail
-          [[ "${{ inputs.conformance_ref }}" =~ ^[0-9a-f]{40}$ ]] || { echo 'ERROR: conformance_ref must be a full immutable commit SHA' >&2; exit 1; }
-          [[ "$(git -C runner-base-contract rev-parse HEAD)" == "${{ inputs.conformance_ref }}" ]] || { echo 'ERROR: checked-out conformance bundle does not match the requested commit' >&2; exit 1; }
+          [[ "$(git -C runner-base-contract rev-parse HEAD)" == "${INPUT_CONFORMANCE_REF}" ]] || { echo 'ERROR: checked-out conformance bundle does not match the requested commit' >&2; exit 1; }
           bash runner-base-contract/ci/derived-conformance.sh \
-            --image "${{ inputs.image }}" \
-            --base-reference "${{ inputs.base_reference }}" \
-            --contract-version "${{ inputs.expected_contract_version }}" \
-            --tools-lock "${{ inputs.tools_lock_path }}" \
-            --domain-test "${{ inputs.domain_test_path }}"
+            --image "${INPUT_IMAGE}" \
+            --base-reference "${INPUT_BASE_REFERENCE}" \
+            --contract-version "${INPUT_EXPECTED_CONTRACT_VERSION}" \
+            --tools-lock "${INPUT_TOOLS_LOCK_PATH}" \
+            --domain-test "${INPUT_DOMAIN_TEST_PATH}"

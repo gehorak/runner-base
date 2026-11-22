@@ -28,6 +28,17 @@ if "${PYTHON}" "${ROOT_DIR}/ci/prepare-release-manifest.py" \
   exit 1
 fi
 
+for invalid_tag in v01.2.3 v1.02.3 v1.2.03; do
+  if "${PYTHON}" "${ROOT_DIR}/ci/prepare-release-manifest.py" \
+    --input "${ROOT_DIR}/image.manifest" \
+    --output "${TMP_DIR}/invalid.manifest" \
+    --tag "${invalid_tag}" \
+    --revision "${REVISION}" >/dev/null 2>&1; then
+    echo "ERROR: release manifest writer accepted non-SemVer tag ${invalid_tag}" >&2
+    exit 1
+  fi
+done
+
 if "${PYTHON}" "${ROOT_DIR}/ci/prepare-release-manifest.py" \
   --input "${ROOT_DIR}/image.manifest" \
   --output "${TMP_DIR}/invalid.manifest" \

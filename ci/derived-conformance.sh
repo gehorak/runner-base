@@ -55,7 +55,7 @@ done
   echo "ERROR: unsupported derived conformance contract '${CONTRACT_VERSION}'" >&2
   exit 1
 }
-[[ "${BASE_REFERENCE}" =~ ^ghcr\.io/gehorak/runner-base:[0-9]+\.[0-9]+\.[0-9]+@sha256:[0-9a-f]{64}$ ]] || {
+[[ "${BASE_REFERENCE}" =~ ^ghcr\.io/gehorak/runner-base:(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)@sha256:[0-9a-f]{64}$ ]] || {
   echo "ERROR: base reference must be an immutable runner-base SemVer digest reference" >&2
   exit 1
 }

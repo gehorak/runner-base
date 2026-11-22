@@ -26,10 +26,10 @@
 # - NOT part of the runner contract
 # =============================================================================
 
-FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 
 LABEL org.opencontainers.image.base.name="debian:bookworm-slim" \
-      org.opencontainers.image.base.digest="sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587"
+      org.opencontainers.image.base.digest="sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc"
 
 
 # =============================================================================
@@ -55,7 +55,8 @@ SHELL ["/bin/bash", "-Eeuo", "pipefail", "-c"]
 # =============================================================================
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
- && apt-get install -y --no-install-recommends \
+ && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates \
       bash \
       coreutils \

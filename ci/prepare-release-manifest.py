@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 
-TAG = re.compile(r"^v([0-9]+\.[0-9]+\.[0-9]+)$")
+TAG = re.compile(r"^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$")
 GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED_KEYS = ("RUNNER_VERSION", "RUNNER_IMAGE_VERSION", "RUNNER_IMAGE_REVISION")
 
