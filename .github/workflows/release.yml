@@ -312,7 +312,7 @@ jobs:
           docker run --rm --volume "${PWD}:/work:ro" aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500 image --input /work/release-artifacts/runner-release.test.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
       - name: Generate SPDX SBOM for tested image
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           image: runner-release:test
           format: spdx-json
