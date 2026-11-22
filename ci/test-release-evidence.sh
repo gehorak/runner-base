@@ -69,4 +69,22 @@ if "${PYTHON}" "${ROOT_DIR}/ci/validate-release-evidence.py" "${EVIDENCE}" >/dev
   exit 1
 fi
 
+"${PYTHON}" "${ROOT_DIR}/ci/write-release-evidence.py"
+"${PYTHON}" - "${EVIDENCE}" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+evidence = json.loads(path.read_text(encoding="utf-8"))
+evidence["source"]["tag"] = "v01.2.3"
+evidence["image"]["manifest_version"] = "01.2.3"
+evidence["image"]["published_reference"] = "ghcr.io/gehorak/runner-base:01.2.3"
+path.write_text(json.dumps(evidence), encoding="utf-8")
+PY
+if "${PYTHON}" "${ROOT_DIR}/ci/validate-release-evidence.py" "${EVIDENCE}" >/dev/null 2>&1; then
+  echo "ERROR: release evidence validator accepted a SemVer tag with a leading zero" >&2
+  exit 1
+fi
+
 echo "==> Release evidence writer and validator tests passed"

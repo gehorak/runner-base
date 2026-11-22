@@ -14,6 +14,7 @@ assert "schedule:" in workflow
 assert "workflow_dispatch:" in workflow
 assert "releases/latest" in workflow
 assert "tag=\"$(gh api" in workflow
+assert r"^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$" in workflow
 assert "docker buildx imagetools inspect --raw" in workflow
 assert 'image "${REFERENCE}@${DIGEST}"' in workflow
 scanner = "aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500"

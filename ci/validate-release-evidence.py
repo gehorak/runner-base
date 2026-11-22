@@ -12,8 +12,9 @@ from typing import Any
 
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
-TAG = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
-PUBLISHED_REFERENCE = re.compile(r"^ghcr\.io/gehorak/runner-base:[0-9]+\.[0-9]+\.[0-9]+$")
+SEMVER_VERSION = r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+TAG = re.compile(rf"^v{SEMVER_VERSION}$")
+PUBLISHED_REFERENCE = re.compile(rf"^ghcr\.io/gehorak/runner-base:{SEMVER_VERSION}$")
 PARENT_REFERENCE = re.compile(r"^debian:bookworm-slim@sha256:[0-9a-f]{64}$")
 
 

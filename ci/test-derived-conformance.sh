@@ -11,6 +11,18 @@ WEAK_IMAGE="${IMAGE}-derived-weak-parent"
 BASE_REFERENCE="ghcr.io/gehorak/runner-base:0.3.0@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 trap 'rm -rf "${TMP_DIR}"; docker image rm -f "${DERIVED_IMAGE}" "${WEAK_IMAGE}" >/dev/null 2>&1 || true' EXIT
 
+for invalid_version in 01.2.3 1.02.3 1.2.03; do
+  if bash "${ROOT_DIR}/ci/derived-conformance.sh" \
+    --image "${IMAGE}" \
+    --base-reference "ghcr.io/gehorak/runner-base:${invalid_version}@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+    --contract-version v001 \
+    --tools-lock "${ROOT_DIR}/ci/fixtures/v030-derived/tools.lock.json" \
+    --domain-test "${ROOT_DIR}/ci/fixtures/v030-derived/domain-test.sh" >/dev/null 2>&1; then
+    echo "ERROR: derived conformance accepted non-SemVer base version ${invalid_version}" >&2
+    exit 1
+  fi
+done
+
 fixture="${ROOT_DIR}/ci/fixtures/v030-derived"
 docker build --build-arg "BASE_IMAGE=${IMAGE}" -t "${DERIVED_IMAGE}" "${fixture}" >/dev/null
 bash "${ROOT_DIR}/ci/derived-conformance.sh" \

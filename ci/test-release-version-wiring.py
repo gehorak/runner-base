@@ -8,6 +8,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+published_scan = (ROOT / ".github" / "workflows" / "published-security-scan.yml").read_text(encoding="utf-8")
+derived_conformance = (ROOT / "ci" / "derived-conformance.sh").read_text(encoding="utf-8")
+strict_semver_pattern = r"^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$"
+assert strict_semver_pattern in workflow
+assert strict_semver_pattern in published_scan
+assert r":(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)@sha256:" in derived_conformance
+assert 'MAJOR="${BASH_REMATCH[1]}"' in workflow
+assert 'MINOR="${BASH_REMATCH[2]}"' in workflow
+assert 'PATCH="${BASH_REMATCH[3]}"' in workflow
 step_start = workflow.index("- name: Run complete base-owned test suite on the built release image")
 step_end = workflow.index("- name: Scan exact tested release candidate", step_start)
 step = workflow[step_start:step_end]
