@@ -10,13 +10,14 @@ findings in its 2026-10-08 scan. Later published-image scans reported fixable
 HIGH and CRITICAL findings for `v0.3.2`, including Debian Bookworm APT, Brotli,
 OpenSSL, and Expat packages.
 
-The local `v0.3.3` candidate refreshes the digest-pinned Bookworm parent and
-upgrades installed packages during the build. Its Trivy 0.71.0 scan with
-`--ignore-unfixed` reported zero fixable HIGH or CRITICAL findings. This local
-result is not public release evidence. Use the immutable `v0.3.3` digest only
-after the matching GitHub
-Release, SBOM, provenance, and release evidence are published and the exact
-published image passes the security gate.
+The published `v0.3.3` image refreshes the digest-pinned Bookworm parent and
+upgrades installed packages during the build. The release workflow scanned the
+exact tested candidate with Trivy 0.71.0 and `--ignore-unfixed`, reporting zero
+fixable HIGH or CRITICAL findings. The published reference is
+`ghcr.io/gehorak/runner-base:0.3.3@sha256:5fdcd758ef973fbab502858a91d3b362fa7a7cb621d911a7fc972625e546a3c2`.
+Its matching [GitHub Release](https://github.com/gehorak/runner-base/releases/tag/v0.3.3)
+contains the SBOM and machine-readable release evidence, with provenance
+attestations associated with the image digest.
 
 Previous digests remain in release evidence for traceability; do not use a
 known-affected digest as a security rollback. Preserve all previous tags,

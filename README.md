@@ -13,9 +13,9 @@ The image follows a **strict execution model** focused on:
 This repository is the **base component of the runner tooling platform**.
 All domain-specific runner images are built on top of this image.
 
-This source tree prepares the `v0.3.3` security patch. It preserves the CLI v001 compatibility bridge introduced in `v0.3.0`, including its deprecated aliases. `v0.3.2` remains the latest published release; the `v0.3.3` image reference is usable only after the matching GitHub Release, SBOM, provenance, and release evidence have been published.
+The published `v0.3.3` security patch preserves the CLI v001 compatibility bridge introduced in `v0.3.0`, including its deprecated aliases. Its GitHub Release includes the matching SBOM and machine-readable release evidence.
 
-Security advisory: published-image scans report fixable HIGH and CRITICAL dependency findings in `v0.3.2`. A local `v0.3.3` candidate has passed the current Trivy HIGH/CRITICAL gate, but it is not a published release. Upgrade only after the immutable `v0.3.3` digest and matching release evidence are available. Keep previous release artifacts immutable. See `docs/SECURITY.md` and `docs/RELEASES.md`.
+Security advisory: published-image scans reported fixable HIGH and CRITICAL dependency findings in `v0.3.2`. The release workflow scanned the exact tested `v0.3.3` image with Trivy 0.71.0 and reported zero fixable HIGH/CRITICAL findings. Use the immutable reference `ghcr.io/gehorak/runner-base:0.3.3@sha256:5fdcd758ef973fbab502858a91d3b362fa7a7cb621d911a7fc972625e546a3c2`; keep previous release artifacts immutable. See the [v0.3.3 GitHub Release](https://github.com/gehorak/runner-base/releases/tag/v0.3.3), `docs/SECURITY.md`, and `docs/RELEASES.md`.
 
 ---
 
