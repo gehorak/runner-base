@@ -77,4 +77,4 @@ tools-lock digest adopted by each derived release. A derived image must state
 which base release and digest it was tested against, then revalidate its domain
 contract whenever it adopts a new parent digest.
 
-The v001 target is documented separately in `docs/CLI-V001.md`. Do not rely on it in a derived image until the corresponding public base release exists.
+The v001 compatibility bridge is documented separately in `docs/CLI-V001.md` and is present in public `runner-base` v0.3.x releases. Derived images must use the released contract and pin the selected base image by immutable digest. The breaking v1.0.0 hard cutover remains separately planned.

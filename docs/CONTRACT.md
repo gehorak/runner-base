@@ -286,7 +286,7 @@ Derived images MUST NOT:
 * introduce implicit behavior
 * weaken non-root guarantees
 
-See `docs/DERIVED-IMAGES.md` for the normative authoring boundary and `docs/CLI-V001.md` for the future, not-yet-implemented CLI target.
+See `docs/DERIVED-IMAGES.md` for the normative derived-image authoring boundary and `docs/CLI-V001.md` for the released v0.3 compatibility bridge contract and the separately planned v1.0.0 hard cutover.
 
 ---
 
